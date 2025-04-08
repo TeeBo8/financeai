@@ -134,7 +134,8 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
 
     // Fonction de soumission
     function onSubmit(data: BudgetFormValues) {
-        console.log("Form data submitted:", data);
+        console.log("onSubmit - Full form data:", JSON.stringify(data, null, 2)); // Affiche tout l'objet en détail
+        console.log("onSubmit - Category ID value:", data.categoryId); // Affiche JUSTE la valeur de categoryId
         
         // Nettoyer les données en supprimant les espaces inutiles
         const cleanedData = {
