@@ -45,8 +45,7 @@ export interface BudgetFormData {
 // Schéma Zod pour la validation (identique au schéma de base + id optionnel)
 // On peut utiliser le schéma de l'input de la mutation tRPC si on veut être 100% synchro
 const budgetFormSchema = z.object({
-    // ID n'est pas dans le formulaire lui-même, mais utile à garder en mémoire
-    id: z.string().uuid().optional(),
+    // PAS DE CHAMP 'id' ICI - il n'est pas modifié via le formulaire
     name: z.string().min(1, "Le nom est requis"),
     amount: z.coerce.number().positive("Le montant doit être positif"),
     period: z.enum(["monthly", "weekly", "custom"], { required_error: "La période est requise." }),
@@ -60,6 +59,9 @@ const budgetFormSchema = z.object({
 
 
 type BudgetFormValues = z.infer<typeof budgetFormSchema>;
+
+// Type étendu pour inclure l'id uniquement pour les defaultValues
+type BudgetFormValuesWithId = BudgetFormValues & { id?: string };
 
 interface BudgetFormProps {
     initialData?: BudgetFormData | null; // Données pour pré-remplir (mode édition)
@@ -89,22 +91,25 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
     // Récupérer les catégories pour le Select
     const { data: categories, isLoading: _isLoadingCategories } = api.category.getAll.useQuery();
 
+    // Créer les defaultValues avec l'id pour stocker l'id, même s'il n'est pas dans le schéma Zod
+    const defaultValues: BudgetFormValuesWithId = {
+        name: initialData?.name ?? "",
+        amount: initialData?.amount ?? 0,
+        period: initialData?.period ?? "monthly", // Valeur par défaut au lieu de undefined
+        startDate: initialData?.startDate ? new Date(initialData.startDate) : new Date(),
+        endDate: initialData?.endDate ? new Date(initialData.endDate) : null,
+        categoryId: initialData?.categoryId ?? null,
+    };
+    
+    // Stocker l'id séparément pour la mise à jour
+    if (initialData?.id) {
+        defaultValues.id = initialData.id;
+    }
+
     const form = useForm<BudgetFormValues>({
         resolver: zodResolver(budgetFormSchema),
-        // Utiliser les initialData pour les defaultValues si en mode édition
-        defaultValues: {
-            id: initialData?.id ?? undefined,
-            name: initialData?.name ?? "",
-            // `amount` peut être une chaîne ou un nombre selon l'input type="number"
-            // mais zod coerce donc on peut stocker en number
-            amount: initialData?.amount ?? 0,
-            period: initialData?.period ?? undefined, // `undefined` pour le placeholder du Select
-            // Assurer que les dates sont bien des objets Date
-            startDate: initialData?.startDate ? new Date(initialData.startDate) : new Date(),
-            endDate: initialData?.endDate ? new Date(initialData.endDate) : null,
-            // Gérer categoryId null ou undefined
-            categoryId: initialData?.categoryId ?? null,
-        },
+        // Utiliser les defaultValues si en mode édition
+        defaultValues,
     });
 
     // Log l'état de validation du formulaire à chaque rendu
@@ -174,9 +179,8 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
             });
         } else {
             // Mode création : appeler create (sans ID)
-            const { id: _id, ...createData } = cleanedData; // Exclut l'ID (qui est undefined ici)
-            console.log(">>> CALLING createBudget.mutate with:", createData);
-            createBudget.mutate(createData);
+            console.log(">>> CALLING createBudget.mutate with:", cleanedData);
+            createBudget.mutate(cleanedData);
         }
     }
 
@@ -227,7 +231,7 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Période</FormLabel>
-                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                             <Select onValueChange={field.onChange} defaultValue={field.value || "monthly"}>
                                 <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Choisir une période" />
