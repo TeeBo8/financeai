@@ -1,0 +1,177 @@
+// src/server/api/routers/bankAccount.ts
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { db } from "~/server/db";
+import { bankAccounts, transactions } from "~/server/db/schema";
+import { and, eq, desc, sql, sum, getTableColumns } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+
+export const bankAccountRouter = createTRPCRouter({
+  // == CREATE ==
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1, { message: "Le nom du compte est requis." }).max(256, { message: "Le nom du compte est trop long (max 256 caractères)." }),
+        // On pourrait ajouter ici: initialBalance, currency, type plus tard
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      console.log("Creating bank account for user:", ctx.session.user.id, "with name:", input.name);
+      try {
+        const [newAccount] = await ctx.db
+          .insert(bankAccounts)
+          .values({
+            userId: ctx.session.user.id,
+            name: input.name,
+            // updatedAt: new Date() // Drizzle gère ça avec $onUpdate
+          })
+          .returning(); // Retourne le compte créé
+
+        if (!newAccount) {
+            console.error("Failed to create bank account, insert operation returned undefined.");
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Impossible de créer le compte bancaire.' });
+        }
+
+        console.log("Bank account created successfully:", newAccount);
+        return newAccount;
+
+      } catch (error) {
+        console.error("Error creating bank account:", error);
+        // Log plus détaillé si nécessaire
+        // if (error instanceof Error) { console.error(error.message); }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la création du compte bancaire.' });
+      }
+    }),
+
+  // == READ (Get All with Balance Calculation) ==
+  getAll: protectedProcedure
+    .query(async ({ ctx }) => {
+      console.log("Fetching bank accounts with balance for user:", ctx.session.user.id);
+      try {
+        // Sélectionne toutes les colonnes de bankAccounts + la somme des transactions
+        const accountsWithBalance = await db
+          .select({
+            // Récupère toutes les colonnes de la table bankAccounts
+            ...getTableColumns(bankAccounts),
+            // Calcule la somme des montants des transactions associées
+            // Utilise coalesce pour retourner '0.00' si la somme est NULL (aucune transaction)
+            // sum() renvoie une chaîne pour les types decimal/numeric
+            balance: sql<string>`coalesce(${sum(transactions.amount)}, '0.00')`.as('balance'),
+          })
+          .from(bankAccounts)
+          // Jointure GAUCHE pour inclure les comptes sans transactions
+          .leftJoin(transactions, eq(bankAccounts.id, transactions.bankAccountId))
+          // Filtre pour l'utilisateur connecté
+          .where(eq(bankAccounts.userId, ctx.session.user.id))
+          // Regroupe par ID de compte pour que SUM() fonctionne par compte
+          .groupBy(bankAccounts.id) // PostgreSQL est assez intelligent pour permettre de grouper juste par PK
+          // Trie par date de création du compte
+          .orderBy(desc(bankAccounts.createdAt));
+
+        console.log(`Found ${accountsWithBalance.length} bank accounts with calculated balance`);
+        return accountsWithBalance; // Retourne les comptes avec la propriété 'balance' ajoutée
+
+      } catch (error) {
+          console.error("Error fetching bank accounts with balance:", error);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la récupération des comptes bancaires et des soldes.' });
+      }
+    }),
+
+  // == UPDATE ==
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1), // ID du compte à mettre à jour
+        name: z.string().min(1, { message: "Le nom du compte est requis." }).max(256),
+        // autres champs à mettre à jour plus tard
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      console.log("Updating bank account:", input.id, "for user:", ctx.session.user.id, "with new name:", input.name);
+      try {
+        const [updatedAccount] = await ctx.db
+          .update(bankAccounts)
+          .set({
+            name: input.name,
+            updatedAt: new Date(), // Mettre à jour manuellement car $onUpdate ne marche que sur certains drivers/configs
+          })
+          .where(
+            and(
+              eq(bankAccounts.id, input.id),
+              eq(bankAccounts.userId, ctx.session.user.id) // Sécurité: l'utilisateur ne peut modifier que ses propres comptes
+            )
+          )
+          .returning();
+
+        if (!updatedAccount) {
+            console.warn("Update attempt failed or account not found/not owned by user:", input.id);
+            // On vérifie si le compte existe mais n'appartient pas à l'user
+            const accountExists = await ctx.db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, input.id) });
+            if (accountExists) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé à modifier ce compte.' });
+            } else {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
+            }
+        }
+
+        console.log("Bank account updated successfully:", updatedAccount);
+        return updatedAccount;
+
+      } catch (error) {
+          // Gérer les erreurs spécifiques de tRPC différemment des erreurs générales
+          if (error instanceof TRPCError) throw error;
+          console.error("Error updating bank account:", error);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la mise à jour du compte bancaire.' });
+      }
+    }),
+
+  // == DELETE ==
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().min(1) })) // On a besoin juste de l'ID
+    .mutation(async ({ ctx, input }) => {
+      console.log("Deleting bank account:", input.id, "for user:", ctx.session.user.id);
+
+      // Vérifier si le compte appartient bien à l'utilisateur AVANT de supprimer
+      const accountToDelete = await ctx.db.query.bankAccounts.findFirst({
+          where: and(
+              eq(bankAccounts.id, input.id),
+              eq(bankAccounts.userId, ctx.session.user.id)
+          )
+      });
+
+      if (!accountToDelete) {
+          console.warn("Delete attempt failed: account not found or not owned by user:", input.id);
+          const accountExists = await ctx.db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, input.id) });
+          if (accountExists) {
+              throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé à supprimer ce compte.' });
+          } else {
+              throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
+          }
+      }
+
+      // Rappel: La suppression d'un compte entraîne la suppression en cascade des transactions associées
+      // (grâce à onDelete: "cascade" dans le schéma)
+      try {
+          const [deletedAccount] = await ctx.db
+              .delete(bankAccounts)
+              .where(eq(bankAccounts.id, input.id)) // On a déjà vérifié la propriété, donc juste l'ID suffit ici
+              .returning({ id: bankAccounts.id }); // On retourne juste l'ID pour confirmer
+
+          if (!deletedAccount) {
+              // Ne devrait pas arriver si la vérification précédente a réussi, mais sécurité
+              console.error("Deletion failed unexpectedly after ownership check for account:", input.id);
+              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'La suppression a échoué de manière inattendue.' });
+          }
+
+          console.log("Bank account deleted successfully:", deletedAccount.id);
+          return deletedAccount; // Retourne { id: "id_supprimé" }
+
+      } catch (error) {
+           // Gérer les erreurs spécifiques de tRPC différemment des erreurs générales
+           if (error instanceof TRPCError) throw error;
+           console.error("Error deleting bank account:", error);
+           // Possible erreur si des contraintes autres que celles gérées par cascade existent
+           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la suppression du compte bancaire.' });
+      }
+    }),
+}); 
