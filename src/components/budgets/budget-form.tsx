@@ -80,6 +80,11 @@ const getContrastYIQ = (hexColor: string): string => {
 export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps) {
     const utils = api.useUtils();
     const isEditMode = !!initialData; // Détermine si on est en mode édition
+    
+    console.log(">>> BudgetForm render - isEditMode:", isEditMode);
+    if (initialData) {
+        console.log(">>> BudgetForm initialData:", JSON.stringify(initialData, null, 2));
+    }
 
     // Récupérer les catégories pour le Select
     const { data: categories, isLoading: _isLoadingCategories } = api.category.getAll.useQuery();
@@ -102,15 +107,24 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
         },
     });
 
+    // Log l'état de validation du formulaire à chaque rendu
+    console.log(">>> Form validation state:", {
+        isValid: form.formState.isValid,
+        isDirty: form.formState.isDirty,
+        errors: form.formState.errors
+    });
+
     // Mutation pour la création
     const createBudget = api.budget.create.useMutation({
         onSuccess: () => {
+            console.log(">>> createBudget mutation SUCCESS");
             toast.success("Budget créé avec succès !");
             void utils.budget.getAll.invalidate();
             form.reset(); // Réinitialise le formulaire
             onFormSubmit?.(); // Ferme la dialogue
         },
         onError: (error) => {
+            console.log(">>> createBudget mutation ERROR:", error.message);
             toast.error(`Erreur création: ${error.message}`);
         }
     });
@@ -118,12 +132,14 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
     // Mutation pour la modification
     const updateBudget = api.budget.update.useMutation({
          onSuccess: (_data) => {
+            console.log(">>> updateBudget mutation SUCCESS");
             toast.success(`Budget modifié avec succès !`);
             void utils.budget.getAll.invalidate();
             form.reset(); // Réinitialise aussi après modification
             onFormSubmit?.(); // Ferme la dialogue
         },
         onError: (error) => {
+            console.log(">>> updateBudget mutation ERROR:", error.message);
             toast.error(`Erreur modification: ${error.message}`);
         }
     });
@@ -131,9 +147,12 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
     // Détermine quelle mutation utiliser et le statut de chargement/pending
     const mutation = isEditMode ? updateBudget : createBudget;
     const { isPending } = mutation; // Utilise isPending
+    
+    console.log(">>> Mutation state:", { isPending, isEditMode });
 
     // Fonction de soumission
     function onSubmit(data: BudgetFormValues) {
+        console.log(">>> BUDGET FORM ONSUBMIT CALLED! <<<"); // Vérifier si onSubmit est appelé
         console.log("onSubmit - Full form data:", JSON.stringify(data, null, 2)); // Affiche tout l'objet en détail
         console.log("onSubmit - Category ID value:", data.categoryId); // Affiche JUSTE la valeur de categoryId
         
@@ -145,13 +164,18 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
         
         if (isEditMode && initialData?.id) {
             // Mode édition : appeler update avec l'ID et les données
-             updateBudget.mutate({
+            console.log(">>> CALLING updateBudget.mutate with:", {
+                id: initialData.id,
+                ...cleanedData
+            });
+            updateBudget.mutate({
                 id: initialData.id, // Utilise l'ID stocké des initialData
                 ...cleanedData // Passe les données nettoyées
             });
         } else {
             // Mode création : appeler create (sans ID)
             const { id: _id, ...createData } = cleanedData; // Exclut l'ID (qui est undefined ici)
+            console.log(">>> CALLING createBudget.mutate with:", createData);
             createBudget.mutate(createData);
         }
     }
