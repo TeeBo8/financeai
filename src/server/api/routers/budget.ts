@@ -20,7 +20,9 @@ const budgetInputSchemaBase = z.object({
   period: z.enum(["monthly", "weekly", "custom"]),
   startDate: z.date(),
   endDate: z.date().nullable(),
-  categoryId: z.string().min(1, "ID de catégorie requis").nullable(),
+  // Accepte null en entrée du formulaire pour "Aucune catégorie"
+  // Mais sera converti en chaîne vide ('') en DB car le schéma DB définit .notNull()
+  categoryId: z.string().nullable(),
 });
 
 export const budgetRouter = createTRPCRouter({
@@ -251,6 +253,8 @@ export const budgetRouter = createTRPCRouter({
           period: input.period,
           startDate: input.startDate,
           endDate: input.endDate ?? new Date(),
+          // Dans le schéma DB, categoryId est .notNull(), on ne peut pas stocker null
+          // On utilise une chaîne vide comme valeur par défaut si null
           categoryId: input.categoryId ?? '',
         };
 
