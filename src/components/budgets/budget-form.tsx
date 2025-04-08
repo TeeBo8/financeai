@@ -52,7 +52,7 @@ const budgetFormSchema = z.object({
     period: z.enum(["monthly", "weekly", "custom"], { required_error: "La période est requise." }),
     startDate: z.date({ required_error: "La date de début est requise." }),
     endDate: z.date().nullable(),
-    categoryId: z.string().uuid().nullable(),
+    categoryId: z.string().nullable(),
 }).refine(data => !data.endDate || !data.startDate || data.endDate >= data.startDate, {
     message: "La date de fin ne peut pas être avant la date de début.",
     path: ["endDate"], // Applique l'erreur au champ endDate
