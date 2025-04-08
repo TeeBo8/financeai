@@ -123,6 +123,15 @@ export function TransactionForm({
         categoryId: transaction.categoryId ?? undefined,
         bankAccountId: transaction.bankAccountId,
       });
+      
+      // AJOUTER CE LOG JUSTE APRÈS RESET
+      // Il faut attendre un micro-instant pour que l'état soit mis à jour
+      setTimeout(() => {
+        console.log(">>> TransactionForm - State AFTER reset:", {
+          isValid: form.formState.isValid,
+          errors: form.formState.errors
+        });
+      }, 0);
     }
   }, [form, transaction, isEditMode]);
 
