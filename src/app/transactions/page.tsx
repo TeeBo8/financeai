@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '~/server/api/root';
 import { TransactionsList, type Transaction } from "~/components/transactions/transactions-list";
+import type { TransactionData } from "~/components/transactions/transaction-form";
+import { Dialog, DialogContent } from "~/components/ui/dialog";
 
 // Structure pour les filtres
 interface TransactionFilters {
@@ -31,6 +33,16 @@ export default function TransactionsPage() {
   // États pour le dialogue/édition
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  // Helper pour préparer les données de la transaction pour le formulaire
+  const prepareTransactionData = (transaction: Transaction): TransactionData => ({
+    id: transaction.id,
+    amount: Number(transaction.amount),
+    description: transaction.description,
+    date: new Date(transaction.date),
+    categoryId: transaction.categoryId,
+    bankAccountId: transaction.bankAccountId,
+  });
 
   // État pour les filtres
   const [filters, setFilters] = useState<TransactionFilters>({
@@ -134,15 +146,9 @@ export default function TransactionsPage() {
           <h1 className="text-2xl font-semibold">Transactions</h1>
           <p className="text-muted-foreground">Gérez et analysez vos transactions</p>
         </div>
-        <TransactionForm 
-          onSuccess={() => {
-            // Si besoin de faire quelque chose après l'ajout/édition d'une transaction
-          }}
-        >
-          <Button onClick={handleOpenAddDialog}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Ajouter
-          </Button>
-        </TransactionForm>
+        <Button onClick={handleOpenAddDialog}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Ajouter
+        </Button>
       </div>
 
       {/* Zone des Filtres */}
@@ -240,6 +246,21 @@ export default function TransactionsPage() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Chargement des transactions...
             </div>
        )}
+
+      {/* Dialog pour AJOUTER ou MODIFIER la transaction */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <TransactionForm
+            key={editingTransaction ? editingTransaction.id : 'create'}
+            transaction={editingTransaction ? prepareTransactionData(editingTransaction) : undefined}
+            mode={editingTransaction ? "edit" : "create"}
+            onSuccess={() => {
+              setIsFormOpen(false);
+              setEditingTransaction(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
