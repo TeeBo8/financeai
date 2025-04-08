@@ -256,8 +256,16 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Catégorie (optionnelle)</FormLabel>
-                            <Select 
-                                onValueChange={(value) => field.onChange(value === "null" ? null : value)} 
+                            <Select
+                                onValueChange={(value) => {
+                                    const newValue = value === "null" ? null : value;
+                                    console.log(">>> BudgetForm Select onValueChange - Raw value:", value);
+                                    console.log(">>> BudgetForm Select onValueChange - Setting value via form.setValue:", newValue);
+                                    form.setValue("categoryId", newValue, {
+                                        shouldValidate: true,
+                                        shouldDirty: true
+                                    });
+                                }}
                                 value={field.value ?? "null"}
                             >
                                 <FormControl>
@@ -266,7 +274,6 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {/* Option "Aucune" (null) */}
                                     <SelectItem value="null">Aucune catégorie</SelectItem>
                                     {categories?.map((category) => (
                                         <SelectItem key={category.id} value={category.id}>
@@ -297,7 +304,6 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
                 />
 
                 <Button type="submit" disabled={isPending} className="w-full">
-                    {/* Change le texte du bouton selon le mode */}
                     {isPending ? (isEditMode ? 'Modification...' : 'Ajout...') : (isEditMode ? 'Enregistrer les modifications' : 'Ajouter le budget')}
                 </Button>
             </form>
