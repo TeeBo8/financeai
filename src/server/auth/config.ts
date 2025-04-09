@@ -63,7 +63,8 @@ export const authConfig = {
     accountsTable: accounts,
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
-  }),
+    allowDangerousEmailAccountLinking: true,
+  } as any),
   callbacks: {
     session: ({ session, user }) => ({
       ...session,
