@@ -116,7 +116,6 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
             onFormSubmit?.(); // Ferme la dialogue
         },
         onError: (error) => {
-            console.error("Erreur lors de la création du budget:", error.message);
             toast.error(`Erreur création: ${error.message}`);
         }
     });
@@ -130,7 +129,6 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
             onFormSubmit?.(); // Ferme la dialogue
         },
         onError: (error) => {
-            console.error("Erreur lors de la modification du budget:", error.message);
             toast.error(`Erreur modification: ${error.message}`);
         }
     });

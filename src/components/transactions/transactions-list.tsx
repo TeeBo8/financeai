@@ -71,7 +71,6 @@ const formatCurrency = (amount: string | number | null | undefined): string => {
     const numericAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
     
     if (isNaN(numericAmount)) {
-        console.warn("formatCurrency received an invalid number:", amount); // Log pour déboguer
         return "Invalide";
     }
     
@@ -88,7 +87,6 @@ const formatDate = (date: string | Date | null | undefined): string => {
         // Tenter de parser la date (peut être string ou Date)
         return format(new Date(date), 'PP', { locale: fr }); // 'PP' = format de date court localisé
     } catch {
-        console.error("Invalid date format:", date);
         return "Date invalide";
     }
 };
@@ -176,34 +174,27 @@ export function TransactionsList({ transactions, onEdit }: TransactionsListProps
   // Mutation pour la suppression de transaction
   const deleteTransactionMutation = api.transaction.delete.useMutation({
       onSuccess: (_data) => {
-          console.log("Suppression réussie, affichage toast...");
           toast.success(`Transaction supprimée avec succès.`);
-          console.log("Toast affiché, invalidation du cache...");
           
           // --- IMPORTANT : Invalider les deux caches ! ---
           void utils.transaction.getAll.invalidate(); // Rafraîchit la liste des transactions
           void utils.budget.getAll.invalidate();    // Recalcule les dépenses des budgets
-          console.log("Cache invalidé.");
           // ----------------------------------------------
       },
       onError: (error) => {
-          console.error("Erreur lors de la suppression de la transaction:", error);
           toast.error(error.message || "Impossible de supprimer la transaction.");
       },
   });
 
   // Fonction appelée lors de la confirmation
   const handleDeleteTransaction = (transactionId: string) => {
-      console.log("Confirming deletion for transaction:", transactionId);
       if (!transactionId) {
-        console.error("ERREUR: ID de transaction manquant pour la suppression");
         toast.error("Erreur: ID de transaction manquant pour la suppression");
         return;
       }
       
       // S'assurer que l'ID est une chaîne valide
       const idToDelete = String(transactionId).trim();
-      console.log("ID formaté pour suppression:", idToDelete);
       
       deleteTransactionMutation.mutate({ id: idToDelete });
   };

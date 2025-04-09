@@ -111,7 +111,6 @@ export function BudgetList() {
       void utils.budget.getAll.invalidate();
     },
     onError: (error) => {
-      console.error("Erreur lors de la suppression du budget:", error);
       // Extraction sécurisée du message d'erreur
       const errorMessage = typeof error.message === 'string' 
         ? error.message 
@@ -122,14 +121,11 @@ export function BudgetList() {
 
   // Fonction appelée lors de la confirmation de suppression
   const handleDeleteBudget = (budgetId: string) => {
-    console.log("Confirming deletion for budget:", budgetId);
     deleteBudgetMutation.mutate({ id: budgetId });
   };
 
   // Fonction pour ouvrir la dialogue de modification
   const handleOpenEditDialog = (budget: ApiBudget) => {
-    console.log("Raw budget data before edit:", budget);
-
     // Convertir les données au format attendu par BudgetFormData
     const budgetDataForForm: BudgetFormData = {
       id: budget.id,
@@ -145,12 +141,10 @@ export function BudgetList() {
 
     // Vérifier si la conversion de amount a échoué
     if (isNaN(budgetDataForForm.amount)) {
-      console.error("Failed to convert budget amount to number:", budget.amount);
       toast.error("Erreur lors de la préparation de la modification du budget (montant invalide).");
       return; // Empêche d'ouvrir le formulaire avec des données invalides
     }
 
-    console.log("Budget data prepared for form:", budgetDataForForm);
     setBudgetToEdit(budgetDataForForm);
     setIsEditDialogOpen(true); // Ouvre la dialogue
   };

@@ -31,8 +31,6 @@ export const budgetRouter = createTRPCRouter({
     const userId = ctx.session.user.id;
     const now = new Date(); // Get the current date/time
 
-    console.log("Fetching budgets for user:", userId);
-
     // 1. Fetch all budgets for the user, including category details
     const userBudgets = await ctx.db.query.budgets.findMany({
       where: eq(budgets.userId, userId),
@@ -41,8 +39,6 @@ export const budgetRouter = createTRPCRouter({
       },
       orderBy: [desc(budgets.createdAt)], // Optional: order them
     });
-
-    console.log(`Found ${userBudgets.length} budgets.`);
 
     if (userBudgets.length === 0) {
       return []; // Return empty array if no budgets
@@ -140,9 +136,6 @@ export const budgetRouter = createTRPCRouter({
         ),
         // No need to order here, we'll filter in memory
       });
-      console.log(`Found ${relevantTransactions.length} potentially relevant expense transactions.`);
-    } else {
-       console.log("No valid date range determined, skipping transaction fetch.");
     }
 
     // 4. Calculate spent amount for each budget
@@ -230,7 +223,6 @@ export const budgetRouter = createTRPCRouter({
       };
     });
 
-    console.log("Returning budgets with calculated spent amounts.");
     return budgetsWithSpentAmount;
 
   }),
@@ -267,11 +259,9 @@ export const budgetRouter = createTRPCRouter({
           .values(budgetData)
           .returning();
 
-        console.log("Budget created:", newBudget);
         return newBudget;
 
       } catch (error) {
-        console.error("Error creating budget:", error);
         // Consider more specific error handling if needed
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -292,8 +282,6 @@ export const budgetRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const budgetIdToDelete = input.id;
 
-      console.log(`User ${userId} attempting to delete budget ${budgetIdToDelete}`);
-
       try {
         // On utilise Drizzle pour supprimer
         // La clause 'where' est cruciale pour la sécurité :
@@ -312,16 +300,12 @@ export const budgetRouter = createTRPCRouter({
         // Vérifier si une ligne a été effectivement supprimée
         // Si deleteResult est vide, c'est que le budget n'existait pas OU n'appartenait pas à l'utilisateur
         if (deleteResult.length === 0) {
-          console.warn(`Budget ${budgetIdToDelete} not found for user ${userId} or permission denied.`);
           throw new TRPCError({
             code: 'NOT_FOUND', // Ou 'FORBIDDEN', au choix
             message: "Le budget que vous essayez de supprimer n'a pas été trouvé ou ne vous appartient pas.",
           });
         }
 
-        console.log(`Budget ${deleteResult[0]?.deletedId} successfully deleted by user ${userId}.`);
-
-        // On retourne un objet indiquant le succès et l'ID supprimé
         return { success: true, deletedId: deleteResult[0]?.deletedId };
 
       } catch (error) {
@@ -330,7 +314,6 @@ export const budgetRouter = createTRPCRouter({
             throw error;
         }
         // Sinon, c'est probablement une erreur de base de données ou autre
-        console.error(`Failed to delete budget ${budgetIdToDelete} for user ${userId}:`, error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Une erreur est survenue lors de la suppression du budget.',
@@ -351,9 +334,6 @@ export const budgetRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       const { id: budgetId, ...updateData } = input; // Sépare l'ID du reste des données
-
-      console.log(`User ${userId} attempting to update budget ${budgetId}`);
-      console.log("Update data:", updateData);
 
       // Validation logique spécifique à l'update si nécessaire (ex: cohérence des dates)
       // Simple check si les deux sont dans l'input:
@@ -390,7 +370,6 @@ export const budgetRouter = createTRPCRouter({
 
         // Vérifier si une ligne a été effectivement mise à jour
         if (updatedBudgets.length === 0) {
-          console.warn(`Budget ${budgetId} not found for user ${userId} or permission denied for update.`);
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: "Le budget que vous essayez de modifier n'a pas été trouvé ou ne vous appartient pas.",
@@ -398,15 +377,12 @@ export const budgetRouter = createTRPCRouter({
         }
 
         const updatedBudget = updatedBudgets[0];
-        console.log(`Budget ${updatedBudget?.id} successfully updated by user ${userId}.`);
-
         return updatedBudget; // Retourne le budget mis à jour
 
       } catch (error) {
         if (error instanceof TRPCError) {
           throw error;
         }
-        console.error(`Failed to update budget ${budgetId} for user ${userId}:`, error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Une erreur est survenue lors de la modification du budget.',

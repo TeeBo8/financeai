@@ -156,7 +156,6 @@ export function TransactionForm({
       }
     },
     onError: (error) => {
-      console.error("Erreur lors de l'ajout de la transaction:", error);
       toast.error("Erreur lors de la création de la transaction.");
     },
   });
@@ -181,7 +180,6 @@ export function TransactionForm({
       }
     },
     onError: (error: unknown) => {
-      console.error("Erreur lors de la modification de la transaction:", error);
       toast.error(`Erreur lors de la modification de la transaction: ${error instanceof Error ? error.message : String(error)}`);
     },
   });
@@ -198,7 +196,6 @@ export function TransactionForm({
     if (isEditMode && transaction) {
       // Vérification supplémentaire que l'ID existe
       if (!transaction.id) {
-        console.error("ERREUR: ID de transaction manquant pour la mise à jour", transaction);
         toast.error("Erreur: ID de transaction manquant pour la mise à jour");
         return;
       }
