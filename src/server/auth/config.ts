@@ -72,5 +72,11 @@ export const authConfig = {
         id: user.id,
       },
     }),
+    // Callback signIn pour permettre la connexion avec n'importe quel 
+    // fournisseur si l'email correspond
+    signIn: ({ user }) => {
+      // Autoriser la connexion peu importe le fournisseur si l'utilisateur existe
+      return !!user;
+    },
   },
 } satisfies NextAuthConfig;
