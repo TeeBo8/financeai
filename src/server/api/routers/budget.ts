@@ -117,8 +117,6 @@ export const budgetRouter = createTRPCRouter({
         }
     });
 
-    console.log("Overall transaction date range:", overallMinDate, "to", overallMaxDate);
-
     // 3. Fetch relevant transactions within the overall date range
     let relevantTransactions: typeof transactions.$inferSelect[] = [];
     if (overallMinDate && overallMaxDate && overallMinDate <= overallMaxDate) {
@@ -131,8 +129,6 @@ export const budgetRouter = createTRPCRouter({
       // Utiliser le jour complet pour la date max en ajoutant T23:59:59.999Z à la chaîne de date
       const maxDateIso = maxDate.toISOString();
       const maxDateStr = maxDateIso.split('T')[0];
-      
-      console.log("Fetching transactions between", minDateStr, "and", maxDateStr);
       
       relevantTransactions = await ctx.db.query.transactions.findMany({
         where: and(
@@ -148,7 +144,6 @@ export const budgetRouter = createTRPCRouter({
     } else {
        console.log("No valid date range determined, skipping transaction fetch.");
     }
-
 
     // 4. Calculate spent amount for each budget
     const budgetsWithSpentAmount = userBudgets.map(budget => {
@@ -224,14 +219,6 @@ export const budgetRouter = createTRPCRouter({
             const amountValue = Number(tx.amount);
             return sum + Math.abs(amountValue);
         }, 0);
-      }
-
-      // Ensure we're working with Date objects when logging
-      if (effectiveStartDate && finalEffectiveEndDate) {
-        // Format for display - utiliser effectiveEndDate (et non finalEffectiveEndDate) pour le log
-        const startDateStr = new Date(effectiveStartDate).toISOString().split('T')[0];
-        const endDateStr = new Date(effectiveEndDate).toISOString().split('T')[0]; // Utiliser effectiveEndDate pour le log
-        console.log(`Budget "${budget.name}" (ID: ${budget.id}): Effective Dates [${startDateStr} - ${endDateStr}], Spent: ${spentAmount}`);
       }
 
       // Return the budget object augmented with spentAmount and categoryName

@@ -102,13 +102,6 @@ export function TransactionForm({
 
   const isEditMode = mode === "edit";
 
-  // Ajouter un log pour vérifier les props reçues
-  useEffect(() => {
-    if (isEditMode) {
-      console.log("TransactionForm initialisé en mode édition avec la transaction:", transaction);
-    }
-  }, [isEditMode, transaction]);
-
   // Récupérer les catégories pour le menu déroulant
   const { data: categories } = api.category.getAll.useQuery();
   
@@ -140,23 +133,12 @@ export function TransactionForm({
         categoryId: transaction.categoryId ?? undefined,
         bankAccountId: transaction.bankAccountId,
       });
-      
-      // AJOUTER CE LOG JUSTE APRÈS RESET
-      // Il faut attendre un micro-instant pour que l'état soit mis à jour
-      setTimeout(() => {
-        console.log(">>> TransactionForm - State AFTER reset:", {
-          isValid: form.formState.isValid,
-          errors: form.formState.errors
-        });
-      }, 0);
     }
   }, [form, transaction, isEditMode]);
 
   // Mutation tRPC pour créer une transaction
   const createTransaction = api.transaction.create.useMutation({
     onSuccess: async () => {
-      console.log("Action réussie, invalidation du cache...");
-      
       // Notification de succès
       toast.success("Transaction créée avec succès !");
       
@@ -172,7 +154,6 @@ export function TransactionForm({
       if (onSuccess) {
         onSuccess();
       }
-      console.log("Cache invalidé et formulaire fermé.");
     },
     onError: (error) => {
       console.error("Erreur lors de l'ajout de la transaction:", error);
@@ -183,8 +164,6 @@ export function TransactionForm({
   // Mutation tRPC pour mettre à jour une transaction
   const updateTransaction = api.transaction.update.useMutation({
     onSuccess: async () => {
-      console.log("Action réussie, invalidation du cache...");
-      
       // Notification de succès
       toast.success("Transaction modifiée avec succès !");
       
@@ -200,7 +179,6 @@ export function TransactionForm({
       if (onSuccess) {
         onSuccess();
       }
-      console.log("Cache invalidé et formulaire fermé.");
     },
     onError: (error: unknown) => {
       console.error("Erreur lors de la modification de la transaction:", error);
@@ -210,16 +188,12 @@ export function TransactionForm({
 
   // Gérer la soumission du formulaire
   function onSubmit(values: FormValues) {
-    console.log("Valeurs du formulaire avant ajustement:", values);
-
     // Traitement spécial pour categoryId
     // Si 'none' ou undefined/empty -> explicitement NULL
     // Sinon, utiliser la valeur (qui doit être un UUID valide)
     const categoryId = (!values.categoryId || values.categoryId === "none") 
       ? null 
       : values.categoryId;
-    
-    console.log("CategoryId après traitement:", categoryId);
     
     if (isEditMode && transaction) {
       // Vérification supplémentaire que l'ID existe
@@ -230,9 +204,6 @@ export function TransactionForm({
       }
 
       // Mode édition: mettre à jour une transaction existante
-      console.log("Mode édition pour transaction ID:", transaction.id);
-      console.log("Objet transaction complet:", transaction);
-      
       // Créer l'objet avec l'ID en premier, plus explicitement
       const updateData = {
         id: transaction.id,
@@ -243,7 +214,6 @@ export function TransactionForm({
         bankAccountId: values.bankAccountId,
       };
       
-      console.log("Données finales envoyées à updateTransaction.mutate:", updateData);
       updateTransaction.mutate(updateData);
     } else {
       // Mode création: ajouter une nouvelle transaction
@@ -255,7 +225,6 @@ export function TransactionForm({
         bankAccountId: values.bankAccountId,
       };
       
-      console.log("Données finales envoyées à createTransaction.mutate:", createData);
       createTransaction.mutate(createData);
     }
   }
