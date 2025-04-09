@@ -10,7 +10,8 @@ import {
   endOfMonth,
   startOfWeek,
   endOfWeek,
-  isValid // To check date validity
+  isValid, // To check date validity
+  endOfDay // Ajout de endOfDay pour inclure la fin de journée
 } from 'date-fns';
 
 // Schema de base pour la création/modification (sans l'ID pour la création)
@@ -98,14 +99,20 @@ export const budgetRouter = createTRPCRouter({
             (periodEndDate < budgetEndDate ? periodEndDate : budgetEndDate) : 
             (periodEndDate || now);
 
+        // --- AJOUT : S'assurer que la date de fin inclut toute la journée ---
+        let finalEffectiveEndDate = effectiveEndDate; 
+        if (finalEffectiveEndDate && isValid(finalEffectiveEndDate)) {
+            finalEffectiveEndDate = endOfDay(finalEffectiveEndDate); // Met l'heure à 23:59:59.999
+        }
+        // --------------------------------------------------------------------
 
         // Update overall min/max dates needed for transaction query
-        if (effectiveStartDate && effectiveEndDate && effectiveStartDate <= effectiveEndDate) { // Only consider valid intervals
+        if (effectiveStartDate && finalEffectiveEndDate && effectiveStartDate <= finalEffectiveEndDate) { // Only consider valid intervals
             if (!overallMinDate || effectiveStartDate < overallMinDate) {
                 overallMinDate = effectiveStartDate;
             }
-            if (!overallMaxDate || effectiveEndDate > overallMaxDate) {
-                overallMaxDate = effectiveEndDate;
+            if (!overallMaxDate || finalEffectiveEndDate > overallMaxDate) {
+                overallMaxDate = finalEffectiveEndDate;
             }
         }
     });
@@ -121,7 +128,9 @@ export const budgetRouter = createTRPCRouter({
       
       // Format dates as YYYY-MM-DD strings for database query
       const minDateStr = minDate.toISOString().split('T')[0];
-      const maxDateStr = maxDate.toISOString().split('T')[0];
+      // Utiliser le jour complet pour la date max en ajoutant T23:59:59.999Z à la chaîne de date
+      const maxDateIso = maxDate.toISOString();
+      const maxDateStr = maxDateIso.split('T')[0];
       
       console.log("Fetching transactions between", minDateStr, "and", maxDateStr);
       
@@ -181,16 +190,24 @@ export const budgetRouter = createTRPCRouter({
           (periodEndDate < budgetEndDate ? periodEndDate : budgetEndDate) : 
           (periodEndDate || now);
 
+      // --- AJOUT : S'assurer que la date de fin inclut toute la journée ---
+      let finalEffectiveEndDate = effectiveEndDate; 
+      if (finalEffectiveEndDate && isValid(finalEffectiveEndDate)) {
+          finalEffectiveEndDate = endOfDay(finalEffectiveEndDate); // Met l'heure à 23:59:59.999
+      }
+      // --------------------------------------------------------------------
+
       let spentAmount = 0;
 
       // Filter the fetched transactions for this budget
-      if (effectiveStartDate && effectiveEndDate && effectiveStartDate <= effectiveEndDate) { // Check interval validity
+      if (effectiveStartDate && finalEffectiveEndDate && effectiveStartDate <= finalEffectiveEndDate) { // Check interval validity
         const transactionsForBudget = relevantTransactions.filter(tx => {
             const txDate = new Date(tx.date); // Ensure tx.date is a Date object
             if (!isValid(txDate)) return false; // Skip invalid transaction dates
 
             // Check if transaction date is within the budget's effective interval
-            const isDateInRange = txDate >= effectiveStartDate && txDate <= effectiveEndDate;
+            // Utilise finalEffectiveEndDate ici pour inclure toute la journée
+            const isDateInRange = txDate >= effectiveStartDate && txDate <= finalEffectiveEndDate;
             if (!isDateInRange) return false;
 
             // Check category match
@@ -210,10 +227,10 @@ export const budgetRouter = createTRPCRouter({
       }
 
       // Ensure we're working with Date objects when logging
-      if (effectiveStartDate && effectiveEndDate) {
-        // Format for display
+      if (effectiveStartDate && finalEffectiveEndDate) {
+        // Format for display - utiliser effectiveEndDate (et non finalEffectiveEndDate) pour le log
         const startDateStr = new Date(effectiveStartDate).toISOString().split('T')[0];
-        const endDateStr = new Date(effectiveEndDate).toISOString().split('T')[0];
+        const endDateStr = new Date(effectiveEndDate).toISOString().split('T')[0]; // Utiliser effectiveEndDate pour le log
         console.log(`Budget "${budget.name}" (ID: ${budget.id}): Effective Dates [${startDateStr} - ${endDateStr}], Spent: ${spentAmount}`);
       }
 
