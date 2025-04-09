@@ -166,8 +166,6 @@ export function TransactionForm({
       // Invalider aussi le cache des budgets, car une nouvelle transaction peut affecter les montants dépensés
       await utils.budget.getAll.invalidate();
       
-      // Fermer le dialog et réinitialiser le formulaire
-      setIsOpen(false);
       form.reset();
       
       // Appeler le callback onSuccess si fourni
@@ -196,8 +194,6 @@ export function TransactionForm({
       // Invalider aussi le cache des budgets
       await utils.budget.getAll.invalidate();
       
-      // Fermer le dialog et réinitialiser le formulaire
-      setIsOpen(false);
       form.reset();
       
       // Appeler le callback onSuccess si fourni
