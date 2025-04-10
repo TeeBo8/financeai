@@ -16,7 +16,7 @@ export default function Home() {
             Reprenez le contrôle de vos <span className="text-primary">Finances</span> avec Finance<span className="text-primary">AI</span>
           </h1>
           <p className="mt-4 max-w-xl text-lg text-muted-foreground sm:text-xl">
-            Suivez vos comptes, analysez vos dépenses, maîtrisez vos budgets. Simple, intelligent, et bientôt dopé à l'IA.
+            Suivez vos comptes, analysez vos dépenses, maîtrisez vos budgets. Simple, intelligent, et bientôt dopé à l&apos;IA.
           </p>
         </div>
 
