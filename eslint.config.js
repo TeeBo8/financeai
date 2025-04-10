@@ -25,10 +25,7 @@ export default tseslint.config(
       rules: {
     "@typescript-eslint/array-type": "off",
     "@typescript-eslint/consistent-type-definitions": "off",
-    "@typescript-eslint/consistent-type-imports": [
-      "warn",
-      { prefer: "type-imports", fixStyle: "inline-type-imports" },
-    ],
+    "@typescript-eslint/consistent-type-imports": "off",
     "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/require-await": "off",
     "@typescript-eslint/no-misused-promises": [
@@ -43,6 +40,7 @@ export default tseslint.config(
       "error",
       { drizzleObjectName: ["db", "ctx.db"] },
     ],
+    "@next/next/no-img-element": "warn",
   },
   },
   {

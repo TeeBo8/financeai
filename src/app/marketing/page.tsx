@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "~/components/ui/button";
 import { signIn } from "next-auth/react";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -42,7 +43,7 @@ export default function Home() {
         </div>
 
         <div className="mt-10 w-full max-w-3xl">
-          <img
+          <Image
             src="/images/financeai-screenshot-reports.png"
             alt="Aperçu du tableau de bord FinanceAI"
             className="rounded-lg shadow-xl border border-border"

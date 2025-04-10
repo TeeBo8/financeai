@@ -15,8 +15,6 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { toast } from "sonner";
-import type { inferRouterOutputs } from '@trpc/server';
-import type { AppRouter } from '~/server/api/root';
 import { TransactionsList, type Transaction } from "~/components/transactions/transactions-list";
 import type { TransactionData } from "~/components/transactions/transaction-form";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
@@ -88,7 +86,7 @@ export default function TransactionsPage() {
        });
    };
 
-  // Handlers pour ouvrir/fermer le dialogue
+  // Handlers pour ouvrir le dialogue
   const handleOpenAddDialog = () => {
     setEditingTransaction(null);
     setIsFormOpen(true);
@@ -96,10 +94,6 @@ export default function TransactionsPage() {
   const handleOpenEditDialog = (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setIsFormOpen(true);
-  };
-  const handleCloseDialog = () => {
-    setIsFormOpen(false);
-    setEditingTransaction(null);
   };
 
   // Calcul de l'état de chargement global

@@ -110,15 +110,16 @@ const prepareTransactionData = (transaction: {
 
 export function TransactionsList({ transactions, onEdit }: TransactionsListProps) {
   const utils = api.useUtils();
-  const [_isError, _setIsError] = useState(false);
+  const [isError, _setIsError] = useState(false);
   
-  const { data: _categories, isLoading: _isLoadingCategories } = api.category.getAll.useQuery();
+  const { data: _categories, isLoading: isLoadingCategories } = api.category.getAll.useQuery();
 
   // --- État pour le Tri ---
   const [sortColumn, setSortColumn] = useState<SortableColumn>('date'); // Tri par date par défaut
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc'); // Plus récent en premier
 
-  // --- États pour les Filtres --- (ces états sont maintenant inutiles puisque les filtres sont gérés au niveau de la page)
+  // --- États pour les Filtres --- (ces états sont maintenant gérés au niveau de la page)
+  // Ces variables sont désactivées car les filtres sont gérés au niveau parent
   const [_startDateFilter, _setStartDateFilter] = useState<Date | undefined>(); 
   const [_endDateFilter, _setEndDateFilter] = useState<Date | undefined>(); 
   const [_categoryFilter, _setCategoryFilter] = useState<string>("all"); 
@@ -181,8 +182,8 @@ export function TransactionsList({ transactions, onEdit }: TransactionsListProps
           void utils.budget.getAll.invalidate();    // Recalcule les dépenses des budgets
           // ----------------------------------------------
       },
-      onError: (error) => {
-          toast.error(error.message || "Impossible de supprimer la transaction.");
+      onError: (_error) => {
+          toast.error(_error.message || "Impossible de supprimer la transaction.");
       },
   });
 
@@ -212,7 +213,7 @@ export function TransactionsList({ transactions, onEdit }: TransactionsListProps
   };
 
   // Si les données sont en cours de chargement
-  if (_isLoadingCategories) {
+  if (isLoadingCategories) {
     return (
       <div className="flex h-40 items-center justify-center">
         <p className="text-muted-foreground">Chargement des données...</p>
@@ -221,7 +222,7 @@ export function TransactionsList({ transactions, onEdit }: TransactionsListProps
   }
 
   // Si une erreur s'est produite
-  if (_isError || !transactions) {
+  if (isError || !transactions) {
     return (
       <div className="rounded-md bg-destructive/10 p-4 text-destructive">
         <p>Impossible de charger vos transactions. Veuillez réessayer plus tard.</p>

@@ -140,12 +140,12 @@ export function TransactionForm({
   const createTransaction = api.transaction.create.useMutation({
     onSuccess: async () => {
       // Notification de succès
-      toast.success("Transaction créée avec succès !");
+      toast.success("Transaction ajoutée avec succès !");
       
       // Invalider le cache pour la query transaction.getAll
       await utils.transaction.getAll.invalidate();
       
-      // Invalider aussi le cache des budgets, car une nouvelle transaction peut affecter les montants dépensés
+      // Invalider aussi le cache des budgets
       await utils.budget.getAll.invalidate();
       
       form.reset();
@@ -155,7 +155,7 @@ export function TransactionForm({
         onSuccess();
       }
     },
-    onError: (error) => {
+    onError: (_error: unknown) => {
       toast.error("Erreur lors de la création de la transaction.");
     },
   });
@@ -179,8 +179,8 @@ export function TransactionForm({
         onSuccess();
       }
     },
-    onError: (error: unknown) => {
-      toast.error(`Erreur lors de la modification de la transaction: ${error instanceof Error ? error.message : String(error)}`);
+    onError: (_error: unknown) => {
+      toast.error(`Erreur lors de la modification de la transaction: ${_error instanceof Error ? _error.message : String(_error)}`);
     },
   });
 
