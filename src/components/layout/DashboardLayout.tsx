@@ -9,9 +9,9 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-screen w-full">
       {/* Sidebar */}
-      <div className="hidden w-64 shrink-0 border-r md:block">
+      <div className="hidden w-64 shrink-0 border-r md:block h-full">
         <Sidebar />
       </div>
       
