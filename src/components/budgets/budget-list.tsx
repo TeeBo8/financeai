@@ -261,34 +261,28 @@ export function BudgetList() {
                     <ArrowUpDown className={`h-4 w-4 ${sortColumn === 'name' ? 'opacity-100' : 'opacity-40'}`} />
                   </Button>
                 </div>
-              </TableHead>
-              <TableHead>
+              </TableHead><TableHead>
                 <div className="flex items-center">
                   Catégorie
                   <Button variant="ghost" size="sm" onClick={() => handleSort('categoryName')} className="ml-1 p-0 h-6">
                     <ArrowUpDown className={`h-4 w-4 ${sortColumn === 'categoryName' ? 'opacity-100' : 'opacity-40'}`} />
                   </Button>
                 </div>
-              </TableHead>
-              <TableHead>Période</TableHead> {/* Non triable */}
-              <TableHead className="text-right">
+              </TableHead><TableHead>Période</TableHead><TableHead className="text-right">
                 <div className="flex items-center justify-end">
                   Montant Budget
                   <Button variant="ghost" size="sm" onClick={() => handleSort('amount')} className="ml-1 p-0 h-6">
                     <ArrowUpDown className={`h-4 w-4 ${sortColumn === 'amount' ? 'opacity-100' : 'opacity-40'}`} />
                   </Button>
                 </div>
-              </TableHead>
-              <TableHead className="text-right">
+              </TableHead><TableHead className="text-right">
                 <div className="flex items-center justify-end">
                   Dépensé
                   <Button variant="ghost" size="sm" onClick={() => handleSort('spentAmount')} className="ml-1 p-0 h-6">
                     <ArrowUpDown className={`h-4 w-4 ${sortColumn === 'spentAmount' ? 'opacity-100' : 'opacity-40'}`} />
                   </Button>
                 </div>
-              </TableHead>
-              <TableHead>Progression</TableHead> {/* Non triable */}
-              <TableHead className="text-right">Actions</TableHead>
+              </TableHead><TableHead>Progression</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
