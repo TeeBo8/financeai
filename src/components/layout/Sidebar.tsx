@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { signOut } from "next-auth/react";
+import { ThemeToggle } from "./theme-toggle";
 
 interface NavItemProps {
   href: string;
@@ -87,14 +88,17 @@ export function Sidebar() {
         </nav>
       </div>
       <div className="border-t px-3 py-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={() => signOut()}
-        >
-          <LogOut className="mr-2 size-4" />
-          <span>Déconnexion</span>
-        </Button>
+        <div className="flex flex-col gap-2">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => signOut()}
+          >
+            <LogOut className="mr-2 size-4" />
+            <span>Déconnexion</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

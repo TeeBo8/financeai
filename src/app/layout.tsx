@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import ClientLayout from "./client-layout";
+import { ThemeProvider } from "~/components/layout/theme-provider";
 
 export const metadata: Metadata = {
   title: "FinanceAI",
@@ -21,7 +22,14 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${geist.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground">
-        <ClientLayout>{children}</ClientLayout>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ClientLayout>{children}</ClientLayout>
+        </ThemeProvider>
       </body>
     </html>
   );
