@@ -110,19 +110,13 @@ const prepareTransactionData = (transaction: {
 
 export function TransactionsList({ transactions, onEdit }: TransactionsListProps) {
   const utils = api.useUtils();
-  const [isError, _setIsError] = useState(false);
+  const [isError] = useState(false);
   
-  const { data: _categories, isLoading: isLoadingCategories } = api.category.getAll.useQuery();
+  const { isLoading: isLoadingCategories } = api.category.getAll.useQuery();
 
   // --- État pour le Tri ---
   const [sortColumn, setSortColumn] = useState<SortableColumn>('date'); // Tri par date par défaut
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc'); // Plus récent en premier
-
-  // --- États pour les Filtres --- (ces états sont maintenant gérés au niveau de la page)
-  // Ces variables sont désactivées car les filtres sont gérés au niveau parent
-  const [_startDateFilter, _setStartDateFilter] = useState<Date | undefined>(); 
-  const [_endDateFilter, _setEndDateFilter] = useState<Date | undefined>(); 
-  const [_categoryFilter, _setCategoryFilter] = useState<string>("all"); 
 
   // --- Logique de Filtrage ET Tri (avec useMemo) ---
   const filteredAndSortedTransactions = useMemo(() => {

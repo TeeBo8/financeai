@@ -92,7 +92,7 @@ type SortDirection = 'asc' | 'desc';
 export function BudgetList() {
   // Utiliser le hook tRPC pour récupérer les budgets
   const utils = api.useUtils();
-  const { data: budgets, isLoading, error, refetch: _refetch } = api.budget.getAll.useQuery();
+  const { data: budgets, isLoading, error } = api.budget.getAll.useQuery();
   const isError = !!error;
 
   // États pour la boîte de dialogue de modification

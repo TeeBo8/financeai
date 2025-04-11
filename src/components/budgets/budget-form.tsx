@@ -84,7 +84,7 @@ export function BudgetForm({ initialData = null, onFormSubmit }: BudgetFormProps
     const isEditMode = !!initialData; // Détermine si on est en mode édition
     
     // Récupérer les catégories pour le Select
-    const { data: categories, isLoading: _isLoadingCategories } = api.category.getAll.useQuery();
+    const { data: categories } = api.category.getAll.useQuery();
 
     // Créer les defaultValues avec l'id pour stocker l'id, même s'il n'est pas dans le schéma Zod
     const defaultValues: BudgetFormValuesWithId = {
