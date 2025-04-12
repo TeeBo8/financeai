@@ -136,6 +136,30 @@ export default function Home() {
         </div>
       </section>
       {/* FIN Section Fonctionnalités */}
+
+      {/* Section Footer */}
+      <footer className="mt-auto w-full border-t py-6 md:py-8"> {/* mt-auto pour le pousser en bas si la page est courte, border-t pour une ligne de séparation */}
+        <div className="container mx-auto flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground md:flex-row md:justify-between">
+          {/* Copyright */}
+          <p>
+            © {new Date().getFullYear()} FinanceAI. Tous droits réservés.
+          </p>
+
+          {/* Liens optionnels (à ajouter plus tard si besoin) */}
+          {/* <nav className="flex gap-4">
+            <Link href="/privacy" className="hover:text-primary">
+              Confidentialité
+            </Link>
+            <Link href="/terms" className="hover:text-primary">
+              Termes
+            </Link>
+          </nav> */}
+
+           {/* Crédit simple (Optionnel) */}
+           {/* <p>Développé avec ❤️ par Thibault Leture</p> */}
+        </div>
+      </footer>
+      {/* FIN Section Footer */}
     </div>
   );
 } 
