@@ -129,7 +129,7 @@ export default function Home() {
                 href={session ? "/dashboard" : "#"} 
                 onClick={!session ? () => signIn('google', { callbackUrl: '/dashboard' }) : undefined}
               >
-                {session ? "Retourner à l&apos;App" : "Commencer gratuitement"}
+                {session ? `Retourner à l\u0027App` : "Commencer gratuitement"}
               </Link>
             </Button>
           </div>
