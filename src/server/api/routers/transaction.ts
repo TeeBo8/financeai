@@ -1,5 +1,6 @@
 import { z } from "zod"; // Utile pour valider les entrées plus tard
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm"; // Import des opérateurs Drizzle (equal, descending)
+import { revalidatePath } from "next/cache"; // Import de revalidatePath pour invalider le cache
 
 import {
   createTRPCRouter,
@@ -163,10 +164,11 @@ export const transactionRouter = createTRPCRouter({
         console.log("Transaction created successfully:", newTransaction);
         
         // ----- IMPORTANT : Invalidation du cache -----
-        // Puisque la création d'une transaction affecte potentiellement le calcul
-        // des budgets, on invalide AUSSI le cache de budget.getAll.
-        // Cette invalidation se fait maintenant côté client dans le composant TransactionForm
-        // -------------------------------------------
+        // Invalider le cache des routes affectées par cette mutation
+        revalidatePath("/dashboard"); // Invalide le cache pour la page dashboard
+        revalidatePath("/transactions"); // Invalide aussi la page des transactions
+        revalidatePath("/accounts"); // Invalide la page des comptes (soldes)
+        revalidatePath("/reports"); // Invalide la page des rapports
         
         // Si une catégorie est spécifiée, récupérer ses détails
         if (newTransaction.categoryId) {
@@ -231,6 +233,12 @@ export const transactionRouter = createTRPCRouter({
         }
 
         console.log(`Transaction ${deleteResult[0]?.deletedId} successfully deleted by user ${userId}.`);
+
+        // Invalider le cache des routes affectées par cette mutation
+        revalidatePath("/dashboard");
+        revalidatePath("/transactions");
+        revalidatePath("/accounts");
+        revalidatePath("/reports");
 
         return { success: true, deletedId: deleteResult[0]?.deletedId };
       } catch (error) {
@@ -338,6 +346,12 @@ export const transactionRouter = createTRPCRouter({
 
         const updatedTransaction = updatedTransactions[0];
         console.log(`Transaction ${updatedTransaction?.id} successfully updated by user ${userId}.`);
+
+        // Invalider le cache des routes affectées par cette mutation
+        revalidatePath("/dashboard");
+        revalidatePath("/transactions");
+        revalidatePath("/accounts");
+        revalidatePath("/reports");
 
         // Si une catégorie est spécifiée dans la transaction mise à jour, la récupérer
         if (updatedTransaction?.categoryId) {
