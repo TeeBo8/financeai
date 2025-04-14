@@ -4,12 +4,14 @@ import { auth } from "~/server/auth";
 import { api } from "~/trpc/server";
 import { SummaryCard } from "~/components/dashboard/summary-card";
 import { AddTransactionButton } from "~/components/dashboard/add-transaction-button";
+import { BalanceChart } from "~/components/dashboard/balance-chart";
 import {
   DollarSign,
   TrendingUp,
   TrendingDown,
   PiggyBank,
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 
 export const metadata: Metadata = {
   title: "Tableau de bord - FinanceAI",
@@ -53,10 +55,9 @@ export default async function DashboardPage() {
   }
   
   // Appeler les procédures tRPC côté serveur
-  const [totalBalance, summary] = await Promise.all([
-    api.dashboard.getTotalBalance(),
-    api.dashboard.getCurrentMonthSummary(),
-  ]);
+  const totalBalance = await api.dashboard.getTotalBalance();
+  const summary = await api.dashboard.getCurrentMonthSummary();
+  const balanceTrend = await api.dashboard.getRecentBalanceTrend({ numberOfDays: 7 });
 
   // Formatage des changements pour les footers des cartes
   const expensesPerc = formatPercentageChange(summary.expensesChange);
@@ -130,6 +131,19 @@ export default async function DashboardPage() {
           footerText={savingsFooterText}
         />
       </div>
+
+      {/* Section pour le Graphique */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Évolution du Solde (7 derniers jours)</CardTitle>
+          <CardDescription>
+            Suivi de votre solde total jour après jour.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pl-2 pr-4 sm:pr-6">
+          <BalanceChart data={balanceTrend} />
+        </CardContent>
+      </Card>
     </div>
   );
 } 

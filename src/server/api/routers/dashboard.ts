@@ -1,9 +1,21 @@
+import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { transactions } from "~/server/db/schema";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql, lt, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { startOfMonth, endOfMonth, subMonths } from "date-fns";
+import {
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+  subDays,
+  startOfDay,
+  endOfDay,
+  formatISO,
+  eachDayOfInterval,
+  format,
+} from "date-fns";
+import { fr } from "date-fns/locale";
 
 export const dashboardRouter = createTRPCRouter({
   // 1. Obtenir le solde total
@@ -107,4 +119,87 @@ export const dashboardRouter = createTRPCRouter({
       });
     }
   }),
+
+  // 3. Obtenir l'historique récent du solde
+  getRecentBalanceTrend: protectedProcedure
+    .input(
+      z.object({
+        // Permet de choisir le nombre de jours (7 par défaut)
+        numberOfDays: z.number().int().min(2).max(90).default(7),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const { numberOfDays } = input;
+      const now = new Date();
+      // Ajustement: Prendre la fin de la journée d'hier pour que le graphique s'arrête à la dernière journée complète
+      const endDate = endOfDay(subDays(now, 1));
+      const startDate = startOfDay(subDays(endDate, numberOfDays - 1));
+
+      try {
+        // Étape 1: Calculer le solde initial (total avant le début de notre période)
+        const initialBalanceResult = await db
+          .select({
+            total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.userId, userId),
+              lt(transactions.date, startDate) // Transactions avant startDate
+            )
+          );
+        let runningBalance = Number(initialBalanceResult[0]?.total ?? 0);
+
+        // Étape 2: Obtenir les changements nets journaliers PENDANT la période
+        // Utilise date_trunc spécifique à PostgreSQL pour grouper par jour
+        const dailyChangesResult = await db
+          .select({
+            // Important: Assurer que le format de date est 'YYYY-MM-DD'
+            day: sql<string>`DATE_TRUNC('day', ${transactions.date})::date::text`,
+            change: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.userId, userId),
+              gte(transactions.date, startDate),
+              lte(transactions.date, endDate) // Jusqu'à la fin de la période
+            )
+          )
+          .groupBy(sql`DATE_TRUNC('day', ${transactions.date})::date`)
+          .orderBy(asc(sql`DATE_TRUNC('day', ${transactions.date})::date`));
+
+        // Créer une Map pour un accès facile : {'YYYY-MM-DD': changement}
+        const dailyChangesMap = new Map<string, number>();
+        dailyChangesResult.forEach((row) => {
+          if (row.day) {
+            dailyChangesMap.set(row.day, Number(row.change));
+          }
+        });
+
+        // Étape 3: Construire les données du graphique jour par jour
+        const intervalDays = eachDayOfInterval({ start: startDate, end: endDate });
+        const trendData = intervalDays.map((day) => {
+          const dayStr = formatISO(day, { representation: "date" }); // 'YYYY-MM-DD'
+          const changeForDay = dailyChangesMap.get(dayStr) ?? 0;
+          runningBalance += changeForDay; // Met à jour le solde courant
+          return {
+            // Format pour le label du graphique (ex: '14/04')
+            name: format(day, "dd/MM", { locale: fr }),
+            // Date complète peut être utile pour des tooltips ou filtres futurs
+            date: dayStr,
+            Solde: runningBalance, // La clé doit correspondre au dataKey dans le graphique
+          };
+        });
+        
+        return trendData;
+      } catch (error) {
+        console.error("Error fetching recent balance trend:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erreur lors de la récupération de l'historique du solde.",
+        });
+      }
+    }),
 }); 
