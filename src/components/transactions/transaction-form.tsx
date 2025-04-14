@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -91,6 +92,7 @@ export function TransactionForm({
   open,
   onOpenChange
 }: TransactionFormProps) {
+  const router = useRouter();
   // État interne pour le dialog - utilisé uniquement si open/onOpenChange ne sont pas fournis
   const [internalOpen, setInternalOpen] = useState(false);
   
@@ -142,13 +144,23 @@ export function TransactionForm({
       // Notification de succès
       toast.success("Transaction ajoutée avec succès !");
       
-      // Invalider le cache pour la query transaction.getAll
+      // Invalider les caches qui dépendent des transactions
       await utils.transaction.getAll.invalidate();
-      
-      // Invalider aussi le cache des budgets
       await utils.budget.getAll.invalidate();
+      await utils.dashboard.getTotalBalance.invalidate();
+      await utils.dashboard.getCurrentMonthSummary.invalidate();
+      await utils.bankAccount.getAll.invalidate();
+      await utils.report.invalidate();
+      
+      // Rafraîchir les server components
+      router.refresh();
       
       form.reset();
+      
+      // Fermer le dialogue si contrôlé de l'extérieur
+      if (isControlled) {
+        setIsOpen(false);
+      }
       
       // Appeler le callback onSuccess si fourni
       if (onSuccess) {
@@ -166,13 +178,23 @@ export function TransactionForm({
       // Notification de succès
       toast.success("Transaction modifiée avec succès !");
       
-      // Invalider le cache pour la query transaction.getAll
+      // Invalider les caches qui dépendent des transactions
       await utils.transaction.getAll.invalidate();
-      
-      // Invalider aussi le cache des budgets
       await utils.budget.getAll.invalidate();
+      await utils.dashboard.getTotalBalance.invalidate();
+      await utils.dashboard.getCurrentMonthSummary.invalidate();
+      await utils.bankAccount.getAll.invalidate();
+      await utils.report.invalidate();
+      
+      // Rafraîchir les server components
+      router.refresh();
       
       form.reset();
+      
+      // Fermer le dialogue si contrôlé de l'extérieur
+      if (isControlled) {
+        setIsOpen(false);
+      }
       
       // Appeler le callback onSuccess si fourni
       if (onSuccess) {

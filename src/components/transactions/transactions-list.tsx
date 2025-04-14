@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { TransactionForm } from "~/components/transactions/transaction-form";
 import type { TransactionData } from "~/components/transactions/transaction-form";
+import { useRouter } from "next/navigation";
 
 // --- Types ---
 // Type direct pour définir la structure d'une transaction
@@ -109,6 +110,7 @@ const prepareTransactionData = (transaction: {
 });
 
 export function TransactionsList({ transactions, onEdit }: TransactionsListProps) {
+  const router = useRouter();
   const utils = api.useUtils();
   const [isError] = useState(false);
   
@@ -168,13 +170,19 @@ export function TransactionsList({ transactions, onEdit }: TransactionsListProps
 
   // Mutation pour la suppression de transaction
   const deleteTransactionMutation = api.transaction.delete.useMutation({
-      onSuccess: (_data) => {
+      onSuccess: async (_data) => {
           toast.success(`Transaction supprimée avec succès.`);
           
-          // --- IMPORTANT : Invalider les deux caches ! ---
-          void utils.transaction.getAll.invalidate(); // Rafraîchit la liste des transactions
-          void utils.budget.getAll.invalidate();    // Recalcule les dépenses des budgets
-          // ----------------------------------------------
+          // Invalider tous les caches qui dépendent des transactions
+          await utils.transaction.getAll.invalidate();
+          await utils.budget.getAll.invalidate();
+          await utils.dashboard.getTotalBalance.invalidate();
+          await utils.dashboard.getCurrentMonthSummary.invalidate();
+          await utils.bankAccount.getAll.invalidate();
+          await utils.report.invalidate();
+          
+          // Rafraîchir les server components
+          router.refresh();
       },
       onError: (_error) => {
           toast.error(_error.message || "Impossible de supprimer la transaction.");
@@ -366,8 +374,7 @@ export function TransactionsList({ transactions, onEdit }: TransactionsListProps
                         transaction={prepareTransactionData(transaction)}
                         mode="edit"
                         onSuccess={() => {
-                          void utils.transaction.getAll.invalidate();
-                          void utils.budget.getAll.invalidate();
+                          // Pas besoin d'ajouter l'invalidation ici car elle est déjà dans le composant TransactionForm
                         }}
                       >
                         <Button
