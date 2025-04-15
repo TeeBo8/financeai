@@ -1,126 +1,136 @@
-"use client";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth } from "~/server/auth";
+import { api } from "~/trpc/server";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import { ExpensesPieChart } from "~/components/reports/expenses-pie-chart";
+import { DatePickerWithRange } from "~/components/ui/date-range-picker";
+import { MonthlySummaryChart } from "~/components/reports/monthly-summary-chart";
+import { BalanceHistoryChart } from "~/components/reports/balance-history-chart";
+// Création d'un composant temporaire pour éviter le problème d'importation
+// À supprimer quand le problème de résolution de modules sera résolu
+import { subMonths, startOfDay, endOfDay } from "date-fns";
 
-import React, { useState } from 'react';
-import { api } from '~/trpc/react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
-} from '~/components/ui/card';
-import { Skeleton } from '~/components/ui/skeleton';
-import { DatePickerWithRange } from '~/components/ui/date-range-picker';
-import { startOfMonth, endOfMonth } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
-import { ExpensesPieChart } from '~/components/reports/expenses-pie-chart';
-import { MonthlySummaryChart } from '~/components/reports/monthly-summary-chart';
+export const metadata: Metadata = {
+  title: "Rapports - FinanceAI",
+  description: "Analysez vos finances avec des visualisations détaillées",
+};
 
-export default function ReportsPage() {
-    // État pour la plage de dates sélectionnée pour le PieChart
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: startOfMonth(new Date()),
-        to: endOfMonth(new Date()),
-    });
+// Helper pour parser les dates des searchParams
+const parseDateParam = (param: string | string[] | undefined, defaultDate: Date): Date => {
+  if (typeof param === "string") {
+    try {
+      // Tente de parser la date (ex: "YYYY-MM-DD")
+      const parsed = new Date(param + "T00:00:00");
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    } catch { /* Ignore parsing error, use default */ }
+  }
+  return defaultDate;
+};
 
-    // Nombre de mois à afficher pour le graphique mensuel
-    const defaultBarMonths = 12;
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const session = await auth();
+  if (!session) {
+    redirect("/api/auth/signin");
+  }
 
-    // Requête tRPC pour obtenir les données du rapport de dépenses par catégorie
-    const expensesQuery = api.report.getExpensesByCategory.useQuery(
-        { // Input pour la requête
-           dateFrom: dateRange?.from,
-           dateTo: dateRange?.to,
-        },
-        { // Options de la requête
-            enabled: !!dateRange?.from && !!dateRange?.to, // Lance la requête seulement si les dates sont définies
-        }
-    );
+  // --- Gestion des Dates ---
+  const now = new Date();
+  const defaultMonthsHistory = 3;
+  const defaultEndDate = endOfDay(now);
+  const defaultStartDate = startOfDay(subMonths(now, defaultMonthsHistory));
 
-    // Requête tRPC pour obtenir les données du résumé mensuel
-    const monthlySummariesQuery = api.report.getMonthlySummaries.useQuery(
-        { // Input pour la requête
-            monthsToGoBack: defaultBarMonths
-        },
-        { // Options de la requête
-            enabled: true, // Lance la requête immédiatement
-        }
-    );
+  // Dans Next.js 15, searchParams est une Promise qu'il faut attendre
+  const params = await searchParams;
+  
+  // Lit les dates des searchParams OU utilise les défauts
+  const startDate = parseDateParam(params?.from, defaultStartDate);
+  const endDate = parseDateParam(params?.to, defaultEndDate);
 
-    return (
-        <div className="space-y-6 p-4 md:p-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-                    Rapports
-                </h1>
-                <p className="text-muted-foreground">
-                    Analysez vos finances avec des visualisations détaillées.
-                </p>
-            </div>
+  // Mois par défaut pour le BarChart
+  const defaultBarMonths = 12;
 
-            {/* Sélecteur de Plage de Dates */}
-            <div className="flex justify-end">
-                <DatePickerWithRange
-                    date={dateRange}
-                    onDateChange={setDateRange} // Met à jour l'état quand la plage change
-                />
-            </div>
+  // --- Appels tRPC ---
+  const expensesData = await api.report.getExpensesByCategory({
+    dateFrom: startDate,
+    dateTo: endDate,
+  });
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {/* Carte pour le PieChart existant */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Dépenses par Catégorie</CardTitle>
-                        <CardDescription>
-                            Répartition pour la période sélectionnée.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {expensesQuery.isLoading && (
-                            <div className='flex justify-center items-center h-60'>
-                                <Skeleton className="h-48 w-48 rounded-full" /> {/* Skeleton pour le pie chart */}
-                            </div>
-                        )}
+  const monthlySummaries = await api.report.getMonthlySummaries({
+    monthsToGoBack: defaultBarMonths,
+  });
 
-                        {expensesQuery.error && (
-                            <p className="text-center text-red-600">
-                                Erreur lors du chargement des données: {expensesQuery.error.message}
-                            </p>
-                        )}
+  const balanceHistory = await api.report.getBalanceHistory({
+    startDate,
+    endDate,
+  });
 
-                        {expensesQuery.data && (
-                            <ExpensesPieChart data={expensesQuery.data} />
-                        )}
-                    </CardContent>
-                </Card>
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+          Rapports
+        </h1>
+        <p className="text-muted-foreground">
+          Analysez vos finances avec des visualisations détaillées.
+        </p>
+      </div>
 
-                {/* Nouvelle Carte pour le BarChart */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Revenus vs Dépenses Mensuels</CardTitle>
-                        <CardDescription>
-                            Comparaison sur les {defaultBarMonths} derniers mois.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {monthlySummariesQuery.isLoading && (
-                            <div className='flex justify-center items-center h-60'>
-                                <Skeleton className="h-48 w-full" /> {/* Skeleton pour le bar chart */}
-                            </div>
-                        )}
+      {/* Filtre de date */}
+      <div className="flex justify-end">
+        <DatePickerWithRange
+          initialFrom={startDate}
+          initialTo={endDate}
+        />
+      </div>
 
-                        {monthlySummariesQuery.error && (
-                            <p className="text-center text-red-600">
-                                Erreur lors du chargement des données: {monthlySummariesQuery.error.message}
-                            </p>
-                        )}
+      {/* Grille pour les graphiques */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Carte PieChart */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Dépenses par Catégorie</CardTitle>
+            <CardDescription>
+              Répartition pour la période sélectionnée.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExpensesPieChart data={expensesData} />
+          </CardContent>
+        </Card>
 
-                        {monthlySummariesQuery.data && (
-                            <MonthlySummaryChart data={monthlySummariesQuery.data} />
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-    );
+        {/* Carte BarChart */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Revenus vs Dépenses Mensuels</CardTitle>
+            <CardDescription>
+              Comparaison sur les {defaultBarMonths} derniers mois.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MonthlySummaryChart data={monthlySummaries} />
+          </CardContent>
+        </Card>
+
+        {/* Nouvelle Carte pour l'Historique du Solde */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Historique du Solde</CardTitle>
+            <CardDescription>
+              Évolution de votre solde total sur la période sélectionnée.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BalanceHistoryChart data={balanceHistory} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 } 

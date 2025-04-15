@@ -3,9 +3,12 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { transactions, categories } from "~/server/db/schema";
-import { and, eq, gte, lte, sql, desc, lt, asc } from "drizzle-orm";
+import { and, eq, gte, lte, sql, desc, lt, asc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
+import { 
+  startOfMonth, endOfMonth, subMonths, format, 
+  eachDayOfInterval, endOfDay, formatISO
+} from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 // Schéma de sortie pour notre rapport
@@ -142,6 +145,84 @@ export const reportRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erreur lors de la récupération des résumés mensuels.",
+        });
+      }
+    }),
+
+  // --- NOUVELLE PROCÉDURE : Historique Détaillé du Solde ---
+  getBalanceHistory: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+        accountIds: z.array(z.string().uuid()).optional(), // Filtre optionnel par compte
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const { startDate, endDate, accountIds } = input;
+
+      // S'assurer que endDate inclut toute la journée
+      const adjustedEndDate = endOfDay(endDate);
+
+      try {
+        // --- Filtre commun pour les requêtes ---
+        const baseConditions = [eq(transactions.userId, userId)];
+        if (accountIds && accountIds.length > 0) {
+          baseConditions.push(inArray(transactions.bankAccountId, accountIds));
+        }
+
+        // 1. Solde initial avant startDate
+        const initialBalanceResult = await db
+          .select({ total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)` })
+          .from(transactions)
+          .where(and(...baseConditions, lt(transactions.date, startDate)));
+
+        let runningBalance = Number(initialBalanceResult[0]?.total ?? 0);
+
+        // 2. Changements journaliers pendant la période
+        const dailyChangesResult = await db
+          .select({
+            day: sql<string>`DATE_TRUNC('day', ${transactions.date})::date::text`,
+            change: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+          })
+          .from(transactions)
+          .where(
+            and(
+              ...baseConditions,
+              gte(transactions.date, startDate),
+              lte(transactions.date, adjustedEndDate)
+            )
+          )
+          .groupBy(sql`DATE_TRUNC('day', ${transactions.date})::date`)
+          .orderBy(asc(sql`DATE_TRUNC('day', ${transactions.date})::date`));
+
+        const dailyChangesMap = new Map<string, number>();
+        dailyChangesResult.forEach(row => row.day && dailyChangesMap.set(row.day, Number(row.change)));
+
+        // 3. Construire les données jour par jour
+        if (startDate > adjustedEndDate) { // Sécurité si les dates sont inversées
+           return [];
+        }
+        const intervalDays = eachDayOfInterval({ start: startDate, end: adjustedEndDate });
+        const historyData = intervalDays.map((day) => {
+          const dayStr = formatISO(day, { representation: "date" });
+          const changeForDay = dailyChangesMap.get(dayStr) ?? 0;
+          runningBalance += changeForDay;
+          return {
+            name: format(day, "dd/MM/yy", { locale: fr }), // Format un peu plus long pour l'axe X
+            date: dayStr,
+            Solde: runningBalance,
+          };
+        });
+
+        return historyData;
+
+      } catch (error) {
+        console.error("Error fetching balance history:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erreur lors de la récupération de l'historique du solde.",
         });
       }
     }),

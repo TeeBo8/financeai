@@ -1,8 +1,11 @@
+"use client"
+
 import * as React from "react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Calendar as CalendarIcon } from "lucide-react"
 import type { DateRange } from "react-day-picker"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 
 import { cn } from "~/lib/utils"
 import { Button } from "~/components/ui/button"
@@ -14,15 +17,53 @@ import {
 } from "~/components/ui/popover"
 
 interface DatePickerWithRangeProps extends React.HTMLAttributes<HTMLDivElement> {
-    date: DateRange | undefined;
-    onDateChange: (date: DateRange | undefined) => void;
+    initialFrom?: Date;
+    initialTo?: Date;
 }
 
 export function DatePickerWithRange({
   className,
-  date,
-  onDateChange
+  initialFrom,
+  initialTo
 }: DatePickerWithRangeProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // Initialiser l'état local avec les valeurs initiales
+  const [date, setDate] = React.useState<DateRange | undefined>({
+    from: initialFrom,
+    to: initialTo
+  })
+
+  // Mettre à jour l'URL quand la plage de dates change
+  const onDateChange = (newDate: DateRange | undefined) => {
+    setDate(newDate)
+    
+    if (newDate?.from || newDate?.to) {
+      // Créer une nouvelle instance de URLSearchParams à partir des paramètres actuels
+      const params = new URLSearchParams(searchParams.toString())
+      
+      // Mettre à jour ou supprimer le paramètre 'from'
+      if (newDate.from) {
+        const fromDate = format(newDate.from, 'yyyy-MM-dd')
+        params.set('from', fromDate)
+      } else {
+        params.delete('from')
+      }
+      
+      // Mettre à jour ou supprimer le paramètre 'to'
+      if (newDate.to) {
+        const toDate = format(newDate.to, 'yyyy-MM-dd')
+        params.set('to', toDate)
+      } else {
+        params.delete('to')
+      }
+      
+      // Naviguer vers la même page avec les nouveaux paramètres
+      router.push(`${pathname}?${params.toString()}`)
+    }
+  }
 
   return (
     <div className={cn("grid gap-2", className)}>
