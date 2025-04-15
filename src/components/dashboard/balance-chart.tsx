@@ -76,7 +76,7 @@ export function BalanceChart({ data }: BalanceChartProps) {
 
   return (
     // Hauteur fixe pour le conteneur du graphique
-    <div style={{ width: '100%', height: 350 }}>
+    <div style={{ width: '100%', height: 350 }} className="text-primary">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
@@ -116,12 +116,12 @@ export function BalanceChart({ data }: BalanceChartProps) {
           <Line
             type="monotone" // Style de ligne (courbe)
             dataKey="Solde" // La donnée à afficher
-            stroke="hsl(var(--primary))" // Utilise la couleur primaire du thème shadcn
+            stroke="currentColor" // Hérite la couleur du texte parent
             strokeWidth={2}
             dot={false} // Cache les points sur la ligne
             activeDot={{ // Style du point au survol
                r: 6,
-               style: { fill: "hsl(var(--primary))", opacity: 0.75 }
+               style: { fill: "currentColor", opacity: 0.75 }
             }}
           />
         </LineChart>
