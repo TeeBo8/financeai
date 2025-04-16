@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -45,12 +45,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 
 // Schéma de validation du formulaire
 const formSchema = z.object({
-  amount: z.coerce.number().refine(val => !isNaN(val), {
-    message: "Le montant doit être un nombre valide"
+  // Type de transaction: revenu ou dépense
+  transactionType: z.enum(["income", "expense"], {
+    required_error: "Veuillez sélectionner le type de transaction",
   }),
+  // Le montant est toujours positif dans le formulaire
+  amount: z.coerce.number({
+    invalid_type_error: "Le montant doit être un nombre valide"
+  }).positive("Le montant doit être positif"),
   description: z.string().min(1, "La description est requise"),
   date: z.date({
     required_error: "Veuillez sélectionner une date",
@@ -113,15 +119,32 @@ export function TransactionForm({
   // Obtenir le contexte tRPC pour pouvoir invalider les queries
   const utils = api.useUtils();
 
+  // Déterminer le type de transaction initial basé sur le montant
+  const getInitialTransactionType = (amount: number | undefined) => {
+    if (amount === undefined) return "expense"; // Par défaut: dépense
+    return amount >= 0 ? "income" : "expense";
+  };
+
+  // Obtenir le montant absolu pour l'affichage dans le formulaire
+  const getInitialAmount = (amount: number | undefined) => {
+    if (amount === undefined) return undefined;
+    return Math.abs(amount);
+  };
+
   // Initialiser le formulaire avec react-hook-form et zod
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: 0,
-      description: "",
-      date: new Date(),
-      categoryId: undefined,
-      bankAccountId: "",
+      transactionType: transaction 
+        ? getInitialTransactionType(transaction.amount) 
+        : "expense",
+      amount: transaction
+        ? getInitialAmount(transaction.amount)
+        : 0,
+      description: transaction?.description ?? "",
+      date: transaction?.date ? new Date(transaction.date) : new Date(),
+      categoryId: transaction?.categoryId ?? undefined,
+      bankAccountId: transaction?.bankAccountId ?? "",
     },
   });
 
@@ -129,7 +152,8 @@ export function TransactionForm({
   useEffect(() => {
     if (isEditMode && transaction) {
       form.reset({
-        amount: transaction.amount,
+        transactionType: getInitialTransactionType(transaction.amount),
+        amount: getInitialAmount(transaction.amount),
         description: transaction.description,
         date: new Date(transaction.date),
         categoryId: transaction.categoryId ?? undefined,
@@ -209,11 +233,16 @@ export function TransactionForm({
   // Gérer la soumission du formulaire
   function onSubmit(values: FormValues) {
     // Traitement spécial pour categoryId
-    // Si 'none' ou undefined/empty -> explicitement NULL
+    // Si &apos;none&apos; ou undefined/empty -> explicitement NULL
     // Sinon, utiliser la valeur (qui doit être un UUID valide)
     const categoryId = (!values.categoryId || values.categoryId === "none") 
       ? null 
       : values.categoryId;
+    
+    // Calculer le montant final avec le bon signe en fonction du type de transaction
+    const finalAmount = values.transactionType === "expense" 
+      ? -Math.abs(values.amount) 
+      : Math.abs(values.amount);
     
     if (isEditMode && transaction) {
       // Vérification supplémentaire que l'ID existe
@@ -223,11 +252,10 @@ export function TransactionForm({
       }
 
       // Mode édition: mettre à jour une transaction existante
-      // Créer l'objet avec l'ID en premier, plus explicitement
       const updateData = {
         id: transaction.id,
         description: values.description,
-        amount: values.amount,
+        amount: finalAmount,
         date: values.date,
         categoryId: categoryId,
         bankAccountId: values.bankAccountId,
@@ -238,7 +266,7 @@ export function TransactionForm({
       // Mode création: ajouter une nouvelle transaction
       const createData = {
         description: values.description,
-        amount: values.amount,
+        amount: finalAmount,
         date: values.date,
         categoryId: categoryId,
         bankAccountId: values.bankAccountId,
@@ -261,7 +289,37 @@ export function TransactionForm({
   const formContent = (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-        {/* Montant */}
+        {/* Type de transaction (Revenu/Dépense) */}
+        <FormField
+          control={form.control}
+          name="transactionType"
+          render={({ field }) => (
+            <FormItem className="space-y-1">
+              <FormLabel>Type de transaction</FormLabel>
+              <FormControl>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="grid grid-cols-2"
+                >
+                  <ToggleGroupItem value="income" aria-label="Revenu">
+                    <ArrowUpCircle className="mr-2 h-4 w-4 text-green-500" />
+                    Revenu
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="expense" aria-label="Dépense">
+                    <ArrowDownCircle className="mr-2 h-4 w-4 text-red-500" />
+                    Dépense
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Montant (toujours positif) */}
         <FormField
           control={form.control}
           name="amount"
@@ -276,12 +334,13 @@ export function TransactionForm({
                   {...field}
                   onChange={(e) => {
                     // Convertir en nombre pour le formulaire
-                    field.onChange(parseFloat(e.target.value) || 0);
+                    const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    field.onChange(value);
                   }}
                 />
               </FormControl>
               <FormDescription>
-                Entrez un montant positif pour un revenu, négatif pour une dépense
+                Entrez le montant (toujours positif). Utilisez les boutons ci-dessus pour indiquer s&apos;il s&apos;agit d&apos;un revenu ou d&apos;une dépense.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -402,7 +461,7 @@ export function TransactionForm({
                       <div className="flex items-center">
                         <span
                           className="mr-2 inline-block h-3 w-3 rounded-full"
-                          style={{ backgroundColor: category.color ?? '#ccc' }}
+                          style={{ backgroundColor: category.color ?? "#ccc" }}
                           aria-hidden="true"
                         />
                         {category.icon && <span className="mr-1">{category.icon}</span>}
