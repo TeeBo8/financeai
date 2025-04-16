@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -82,6 +82,7 @@ interface TransactionFormProps {
   // Props pour le Dialog externe
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  isDialogOpen?: boolean; // Indique si le parent Dialog est ouvert
 }
 
 export function TransactionForm({ 
@@ -90,7 +91,8 @@ export function TransactionForm({
   transaction,
   mode = "create",
   open,
-  onOpenChange
+  onOpenChange,
+  isDialogOpen
 }: TransactionFormProps) {
   const router = useRouter();
   // État interne pour le dialog - utilisé uniquement si open/onOpenChange ne sont pas fournis
@@ -101,6 +103,28 @@ export function TransactionForm({
   const isOpen = isControlled ? open : internalOpen;
   // Utiliser l'opérateur de fusion nulle à la place de l'opérateur logique OR
   const setIsOpen = onOpenChange ?? setInternalOpen;
+
+  // Crée une ref pour l'input sur lequel on veut mettre le focus
+  const amountInputRef = useRef<HTMLInputElement>(null);
+  
+  // État pour savoir quel bouton a été cliqué
+  const [submitAction, setSubmitAction] = useState<'save' | 'saveAndNew'>('save');
+
+  // useEffect pour le focus initial
+  useEffect(() => {
+    // On utilise soit isDialogOpen passé en prop, soit isOpen local
+    const dialogIsOpen = isDialogOpen ?? isOpen;
+    
+    if (dialogIsOpen) {
+      // Petit délai pour laisser le temps au dialogue d'être rendu
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus({ preventScroll: true });
+      }, 100);
+      
+      // Nettoie le timer si le composant est démonté
+      return () => clearTimeout(timer);
+    }
+  }, [isDialogOpen, isOpen]);
 
   const isEditMode = mode === "edit";
 
@@ -142,72 +166,75 @@ export function TransactionForm({
     },
   });
 
-  // Mutation tRPC pour créer une transaction
-  const createTransaction = api.transaction.create.useMutation({
-    onSuccess: async () => {
-      // Notification de succès
-      toast.success("Transaction ajoutée avec succès !");
+  // Fonction de gestion du succès des mutations
+  const handleMutationSuccess = async () => {
+    // Notification de succès
+    toast.success(isEditMode ? "Transaction modifiée avec succès !" : "Transaction ajoutée avec succès !");
+    
+    // Invalider les caches qui dépendent des transactions
+    await utils.transaction.getAll.invalidate();
+    await utils.budget.getAll.invalidate();
+    await utils.dashboard.getTotalBalance.invalidate();
+    await utils.dashboard.getCurrentMonthSummary.invalidate();
+    await utils.bankAccount.getAll.invalidate();
+    await utils.report.invalidate();
+    
+    // Rafraîchir les server components
+    router.refresh();
+    
+    if (submitAction === 'saveAndNew' && !isEditMode) {
+      // Pour "Ajouter et Nouveau" : d'abord réinitialiser complètement le formulaire
+      form.reset();
       
-      // Invalider les caches qui dépendent des transactions
-      await utils.transaction.getAll.invalidate();
-      await utils.budget.getAll.invalidate();
-      await utils.dashboard.getTotalBalance.invalidate();
-      await utils.dashboard.getCurrentMonthSummary.invalidate();
-      await utils.bankAccount.getAll.invalidate();
-      await utils.report.invalidate();
+      // Puis définir uniquement les valeurs que nous voulons conserver
+      const currentType = form.getValues('transactionType');
+      const currentDate = form.getValues('date');
+      const currentBankAccount = form.getValues('bankAccountId');
       
-      // Rafraîchir les server components
-      router.refresh();
+      // Mettre à jour les champs que nous voulons conserver
+      form.setValue('transactionType', currentType);
+      form.setValue('date', currentDate);
+      form.setValue('bankAccountId', currentBankAccount);
       
+      // Remet le focus sur le montant après reset
+      setTimeout(() => amountInputRef.current?.focus(), 50);
+      // Ne pas fermer le dialogue
+    } else {
+      // Pour "Ajouter" ou "Modifier" : reset complet et fermeture
       form.reset();
       
       // Fermer le dialogue si contrôlé de l'extérieur
       if (isControlled) {
         setIsOpen(false);
       }
-      
-      // Appeler le callback onSuccess si fourni
-      if (onSuccess) {
-        onSuccess();
-      }
-    },
-    onError: (_error: unknown) => {
-      toast.error("Erreur lors de la création de la transaction.");
-    },
+    }
+    
+    // Réinitialiser l'action par défaut pour la prochaine fois
+    setSubmitAction('save');
+    
+    // Appeler le callback onSuccess si fourni
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
+  
+  // Fonction de gestion des erreurs des mutations
+  const handleMutationError = (_error: unknown) => {
+    toast.error(`Erreur lors de la ${isEditMode ? 'modification' : 'création'} de la transaction: ${_error instanceof Error ? _error.message ?? String(_error) : String(_error)}`);
+    // Réinitialiser l'action en cas d'erreur aussi
+    setSubmitAction('save');
+  };
+
+  // Mutation tRPC pour créer une transaction
+  const createTransaction = api.transaction.create.useMutation({
+    onSuccess: handleMutationSuccess,
+    onError: handleMutationError,
   });
 
   // Mutation tRPC pour mettre à jour une transaction
   const updateTransaction = api.transaction.update.useMutation({
-    onSuccess: async () => {
-      // Notification de succès
-      toast.success("Transaction modifiée avec succès !");
-      
-      // Invalider les caches qui dépendent des transactions
-      await utils.transaction.getAll.invalidate();
-      await utils.budget.getAll.invalidate();
-      await utils.dashboard.getTotalBalance.invalidate();
-      await utils.dashboard.getCurrentMonthSummary.invalidate();
-      await utils.bankAccount.getAll.invalidate();
-      await utils.report.invalidate();
-      
-      // Rafraîchir les server components
-      router.refresh();
-      
-      form.reset();
-      
-      // Fermer le dialogue si contrôlé de l'extérieur
-      if (isControlled) {
-        setIsOpen(false);
-      }
-      
-      // Appeler le callback onSuccess si fourni
-      if (onSuccess) {
-        onSuccess();
-      }
-    },
-    onError: (_error: unknown) => {
-      toast.error(`Erreur lors de la modification de la transaction: ${_error instanceof Error ? _error.message ?? String(_error) : String(_error)}`);
-    },
+    onSuccess: handleMutationSuccess,
+    onError: handleMutationError,
   });
 
   // Gérer la soumission du formulaire
@@ -261,9 +288,6 @@ export function TransactionForm({
   const dialogDescription = isEditMode 
     ? "Modifiez les détails de cette transaction" 
     : "Saisissez les détails de votre nouvelle transaction";
-  const submitButtonText = isEditMode
-    ? (isPending ? "Modification en cours..." : "Modifier")
-    : (isPending ? "Ajout en cours..." : "Ajouter");
 
   // Prépare les options pour les Combobox
   const accountOptions: ComboboxOption[] = bankAccounts?.map(acc => ({
@@ -329,6 +353,7 @@ export function TransactionForm({
               <FormLabel>Montant</FormLabel>
               <FormControl>
                 <Input
+                  ref={amountInputRef}
                   placeholder="0.00"
                   type="number"
                   step="0.01"
@@ -432,9 +457,27 @@ export function TransactionForm({
           nullLabel="-- Non catégorisé --"
         />
 
-        <DialogFooter>
-          <Button type="submit" disabled={isPending}>
-            {submitButtonText}
+        <DialogFooter className="flex gap-2">
+          {/* Afficher "Ajouter et Nouveau" seulement en mode création */}
+          {!isEditMode && (
+            <Button
+              type="submit"
+              variant="secondary"
+              disabled={isPending}
+              onClick={() => setSubmitAction('saveAndNew')}
+            >
+              {createTransaction.isPending && submitAction === 'saveAndNew' ? "Ajout en cours..." : "Ajouter et Nouveau"}
+            </Button>
+          )}
+          <Button 
+            type="submit" 
+            disabled={isPending}
+            onClick={() => setSubmitAction('save')}
+          >
+            {isPending && submitAction === 'save'
+              ? (isEditMode ? "Modification en cours..." : "Ajout en cours...")
+              : (isEditMode ? "Modifier" : "Ajouter")
+            }
           </Button>
         </DialogFooter>
       </form>

@@ -252,6 +252,7 @@ export default function TransactionsPage() {
               setIsFormOpen(false);
               setEditingTransaction(null);
             }}
+            isDialogOpen={isFormOpen}
           />
         </DialogContent>
       </Dialog>
