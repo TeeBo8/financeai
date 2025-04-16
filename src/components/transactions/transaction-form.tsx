@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,14 +38,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
+import { ComboboxField, type ComboboxOption } from "~/components/ui/combobox-rhf";
 
 // Schéma de validation du formulaire
 const formSchema = z.object({
@@ -114,7 +108,7 @@ export function TransactionForm({
   const { data: categories } = api.category.getAll.useQuery();
   
   // Récupérer les comptes bancaires
-  const { data: bankAccounts, isLoading: isLoadingAccounts } = api.bankAccount.getAll.useQuery();
+  const { data: bankAccounts } = api.bankAccount.getAll.useQuery();
 
   // Obtenir le contexte tRPC pour pouvoir invalider les queries
   const utils = api.useUtils();
@@ -135,10 +129,10 @@ export function TransactionForm({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      transactionType: transaction 
+      transactionType: isEditMode && transaction 
         ? getInitialTransactionType(transaction.amount) 
         : "expense",
-      amount: transaction
+      amount: isEditMode && transaction
         ? getInitialAmount(transaction.amount)
         : 0,
       description: transaction?.description ?? "",
@@ -147,20 +141,6 @@ export function TransactionForm({
       bankAccountId: transaction?.bankAccountId ?? "",
     },
   });
-
-  // Remplir le formulaire avec les données de la transaction existante en mode édition
-  useEffect(() => {
-    if (isEditMode && transaction) {
-      form.reset({
-        transactionType: getInitialTransactionType(transaction.amount),
-        amount: getInitialAmount(transaction.amount),
-        description: transaction.description,
-        date: new Date(transaction.date),
-        categoryId: transaction.categoryId ?? undefined,
-        bankAccountId: transaction.bankAccountId,
-      });
-    }
-  }, [form, transaction, isEditMode]);
 
   // Mutation tRPC pour créer une transaction
   const createTransaction = api.transaction.create.useMutation({
@@ -226,7 +206,7 @@ export function TransactionForm({
       }
     },
     onError: (_error: unknown) => {
-      toast.error(`Erreur lors de la modification de la transaction: ${_error instanceof Error ? _error.message : String(_error)}`);
+      toast.error(`Erreur lors de la modification de la transaction: ${_error instanceof Error ? _error.message ?? String(_error) : String(_error)}`);
     },
   });
 
@@ -285,6 +265,27 @@ export function TransactionForm({
     ? (isPending ? "Modification en cours..." : "Modifier")
     : (isPending ? "Ajout en cours..." : "Ajouter");
 
+  // Prépare les options pour les Combobox
+  const accountOptions: ComboboxOption[] = bankAccounts?.map(acc => ({
+    value: acc.id,
+    label: acc.name,
+  })) ?? [];
+
+  const categoryOptions: ComboboxOption[] = (categories ?? []).map(category => ({
+    value: category.id,
+    label: category.name,
+    icon: category.icon ? (
+      <div className="flex items-center">
+        <span
+          className="mr-2 inline-block h-3 w-3 rounded-full"
+          style={{ backgroundColor: category.color ?? "#ccc" }}
+          aria-hidden="true"
+        />
+        <span>{category.icon}</span>
+      </div>
+    ) : undefined,
+  }));
+
   // Le contenu du formulaire
   const formContent = (
     <Form {...form}>
@@ -331,11 +332,10 @@ export function TransactionForm({
                   placeholder="0.00"
                   type="number"
                   step="0.01"
-                  {...field}
+                  value={field.value === 0 && !isEditMode ? '' : field.value}
                   onChange={(e) => {
-                    // Convertir en nombre pour le formulaire
-                    const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
-                    field.onChange(value);
+                    const val = e.target.value;
+                    field.onChange(val === '' ? 0 : parseFloat(val));
                   }}
                 />
               </FormControl>
@@ -348,42 +348,16 @@ export function TransactionForm({
         />
 
         {/* Compte Bancaire */}
-        <FormField
+        <ComboboxField
           control={form.control}
           name="bankAccountId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Compte Bancaire *</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value}
-                disabled={isLoadingAccounts || !bankAccounts || bankAccounts.length === 0}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      isLoadingAccounts ? "Chargement..."
-                      : (!bankAccounts || bankAccounts.length === 0) ? "Aucun compte disponible"
-                      : "Sélectionner un compte..."
-                    } />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {bankAccounts?.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!isLoadingAccounts && (!bankAccounts || bankAccounts.length === 0) && (
-                <p className="text-sm text-muted-foreground">
-                  Veuillez d&apos;abord <Link href="/accounts" className="underline">ajouter un compte bancaire</Link>.
-                </p>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
+          label="Compte Bancaire *"
+          options={accountOptions}
+          placeholder="Sélectionner un compte..."
+          searchPlaceholder="Rechercher un compte..."
+          emptyText="Aucun compte trouvé."
+          description={!bankAccounts || (bankAccounts && bankAccounts.length === 0) ? 
+            <span>Veuillez d&apos;abord <Link href="/accounts" className="underline">ajouter un compte bancaire</Link>.</span> : undefined}
         />
 
         {/* Description */}
@@ -394,7 +368,11 @@ export function TransactionForm({
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Courses au supermarché" {...field} />
+                <Input 
+                  placeholder="Ex: Courses au supermarché" 
+                  value={field.value ?? ''} 
+                  onChange={field.onChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -442,38 +420,16 @@ export function TransactionForm({
         />
 
         {/* Catégorie */}
-        <FormField
+        <ComboboxField
           control={form.control}
           name="categoryId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Catégorie</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value ?? "none"}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner une catégorie" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">-- Non catégorisé --</SelectItem>
-                  {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      <div className="flex items-center">
-                        <span
-                          className="mr-2 inline-block h-3 w-3 rounded-full"
-                          style={{ backgroundColor: category.color ?? "#ccc" }}
-                          aria-hidden="true"
-                        />
-                        {category.icon && <span className="mr-1">{category.icon}</span>}
-                        <span>{category.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          label="Catégorie"
+          options={categoryOptions}
+          placeholder="Sélectionner une catégorie..."
+          searchPlaceholder="Rechercher une catégorie..."
+          emptyText="Aucune catégorie trouvée."
+          allowNull={true}
+          nullLabel="-- Non catégorisé --"
         />
 
         <DialogFooter>
