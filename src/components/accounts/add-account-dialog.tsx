@@ -9,23 +9,23 @@ import {
   DialogDescription,
   // DialogFooter, // Pas nécessaire ici, le formulaire a son bouton
 } from "~/components/ui/dialog";
-import { BankAccountForm } from "./bank-account-form"; // Importe notre formulaire
+import { AccountForm } from "./account-form"; // Importe notre formulaire
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '~/server/api/root';
 
-type BankAccount = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
+type AccountWithBalance = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
 
-interface AddBankAccountDialogProps {
+interface AddAccountDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  accountToEdit?: BankAccount | null;
+  accountToEdit?: AccountWithBalance | null;
 }
 
-export default function AddBankAccountDialog({
+export default function AddAccountDialog({
   isOpen,
   onClose,
   accountToEdit,
-}: AddBankAccountDialogProps) {
+}: AddAccountDialogProps) {
 
   // Détermine le titre et la description en fonction du mode (ajout ou édition)
   const title = accountToEdit ? "Modifier le compte bancaire" : "Ajouter un nouveau compte bancaire";
@@ -41,16 +41,11 @@ export default function AddBankAccountDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <BankAccountForm
+          <AccountForm
             accountToEdit={accountToEdit}
             onFormSubmit={onClose} // Passe la fonction onClose pour fermer le dialogue après succès
           />
         </div>
-        {/*
-        <DialogFooter>
-           Pas besoin de footer si le bouton est dans le formulaire
-        </DialogFooter>
-        */}
       </DialogContent>
     </Dialog>
   );

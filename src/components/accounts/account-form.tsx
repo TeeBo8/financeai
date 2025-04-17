@@ -26,19 +26,19 @@ const formSchema = z.object({
   // Ajoutez d'autres champs ici si nécessaire plus tard (ex: solde initial)
 });
 
-type BankAccountFormData = z.infer<typeof formSchema>;
-type BankAccount = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
+type AccountFormData = z.infer<typeof formSchema>;
+type AccountWithBalance = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
 
-interface BankAccountFormProps {
-  accountToEdit?: BankAccount | null; // Compte à modifier (optionnel)
+interface AccountFormProps {
+  accountToEdit?: AccountWithBalance | null; // Compte à modifier (optionnel)
   onFormSubmit: () => void; // Fonction à appeler après succès pour fermer le dialogue
 }
 
-export function BankAccountForm({ accountToEdit, onFormSubmit }: BankAccountFormProps) {
+export function AccountForm({ accountToEdit, onFormSubmit }: AccountFormProps) {
   const utils = api.useUtils();
 
   // Configuration react-hook-form
-  const form = useForm<BankAccountFormData>({
+  const form = useForm<AccountFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: accountToEdit?.name ?? "",
@@ -87,7 +87,7 @@ export function BankAccountForm({ accountToEdit, onFormSubmit }: BankAccountForm
   });
 
   // Fonction appelée lors de la soumission du formulaire valide
-  function onSubmit(values: BankAccountFormData) {
+  function onSubmit(values: AccountFormData) {
     if (accountToEdit) {
       // Mode édition
       updateMutation.mutate({ id: accountToEdit.id, ...values });
