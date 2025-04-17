@@ -49,8 +49,8 @@ export function TransactionRowActions({ transaction }: TransactionRowActionsProp
   });
 
   const handleEdit = () => {
-    // Ouvre le dialogue d'édition en passant la transaction initiale
-    openEditDialog(prepareTransactionData(transaction));
+    // Ouvre le dialogue d'édition en passant la transaction initiale et en spécifiant showAddAndNew: false
+    openEditDialog(prepareTransactionData(transaction), { showAddAndNew: false });
   };
   // --- Fin Gestion Dialogue Modification ---
 

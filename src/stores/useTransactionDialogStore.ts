@@ -5,7 +5,8 @@ interface TransactionDialogState {
   isOpen: boolean;
   mode: "create" | "edit";
   initialData?: TransactionData;
-  openDialog: (data?: TransactionData) => void;
+  showAddAndNewButton: boolean;
+  openDialog: (data?: TransactionData, options?: { showAddAndNew?: boolean }) => void;
   closeDialog: () => void;
 }
 
@@ -13,14 +14,17 @@ export const useTransactionDialogStore = create<TransactionDialogState>((set) =>
   isOpen: false,
   mode: "create",
   initialData: undefined,
-  openDialog: (data?: TransactionData) => set({ 
+  showAddAndNewButton: false,
+  openDialog: (data?: TransactionData, options?: { showAddAndNew?: boolean }) => set({ 
     isOpen: true, 
     initialData: data, 
-    mode: data ? "edit" : "create" 
+    mode: data ? "edit" : "create",
+    showAddAndNewButton: options?.showAddAndNew ?? false,
   }),
   closeDialog: () => set({ 
     isOpen: false, 
     initialData: undefined, 
-    mode: "create" 
+    mode: "create",
+    showAddAndNewButton: false,
   }),
 })); 

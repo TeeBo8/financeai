@@ -5,7 +5,6 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { PlusCircle, FilterX, Loader2 } from "lucide-react";
 import { Skeleton } from "~/components/ui/skeleton";
-import { TransactionForm } from "~/components/transactions/transaction-form";
 import { DatePicker } from "~/components/ui/date-picker";
 import {
   Select,
@@ -16,9 +15,8 @@ import {
 } from "~/components/ui/select";
 import { toast } from "sonner";
 import { TransactionsDataTable } from "~/components/transactions/transactions-data-table";
-import type { TransactionData } from "~/components/transactions/transaction-form";
 import type { TransactionWithRelations } from "~/lib/types";
-import { Dialog, DialogContent } from "~/components/ui/dialog";
+import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
 
 // Structure pour les filtres
 interface TransactionFilters {
@@ -30,19 +28,8 @@ interface TransactionFilters {
 
 export default function TransactionsPage() {
   // États pour le dialogue/édition
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<TransactionWithRelations | null>(null);
-
-  // Helper pour préparer les données de la transaction pour le formulaire
-  const prepareTransactionData = (transaction: TransactionWithRelations): TransactionData => ({
-    id: transaction.id,
-    amount: typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : Number(transaction.amount),
-    description: transaction.description,
-    date: new Date(transaction.date),
-    categoryId: transaction.categoryId,
-    bankAccountId: transaction.bankAccountId,
-  });
-
+  const { openDialog } = useTransactionDialogStore();
+  
   // État pour les filtres
   const [filters, setFilters] = useState<TransactionFilters>({
       categoryId: 'all', // Valeur initiale pour afficher 'Toutes les catégories'
@@ -89,8 +76,7 @@ export default function TransactionsPage() {
 
   // Handlers pour ouvrir le dialogue
   const handleOpenAddDialog = () => {
-    setEditingTransaction(null);
-    setIsFormOpen(true);
+    openDialog(undefined, { showAddAndNew: false });
   };
 
   // Calcul de l'état de chargement global
@@ -234,18 +220,6 @@ export default function TransactionsPage() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Chargement des transactions...
             </div>
        )}
-
-      {/* Dialog pour AJOUTER ou MODIFIER la transaction */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <TransactionForm
-            key={editingTransaction ? editingTransaction.id : 'create'}
-            transaction={editingTransaction ? prepareTransactionData(editingTransaction) : undefined}
-            mode={editingTransaction ? "edit" : "create"}
-            onSuccess={() => setIsFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 } 

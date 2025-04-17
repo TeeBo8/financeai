@@ -1,7 +1,7 @@
 import "~/styles/globals.css";
 
-import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import ClientLayout from "./client-layout";
 import { ThemeProvider } from "~/components/layout/theme-provider";
 
@@ -11,16 +11,16 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
 });
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" className={`${geist.variable}`} suppressHydrationWarning>
+    <html lang="fr" className={`${inter.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground">
         <ThemeProvider
           attribute="class"

@@ -7,22 +7,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { CalendarIcon, ArrowUpCircle, ArrowDownCircle, Loader2 } from "lucide-react";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { cn } from "~/lib/utils";
+import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Calendar } from "~/components/ui/calendar";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "~/components/ui/dialog";
 import {
   Form,
@@ -72,38 +71,21 @@ export type TransactionData = {
   bankAccountId: string;
 };
 
-// Props pour le formulaire
+// Props simplifiées pour le formulaire
 interface TransactionFormProps {
-  onSuccess?: () => void;
   transaction?: TransactionData;
   mode?: "create" | "edit";
-  // children est optionnel maintenant
-  children?: React.ReactNode;
-  // Props pour le Dialog externe
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  isDialogOpen?: boolean; // Indique si le parent Dialog est ouvert
+  showAddAndNewButton?: boolean;
 }
 
 export function TransactionForm({ 
-  children,
-  onSuccess,
   transaction,
   mode = "create",
-  open,
-  onOpenChange,
-  isDialogOpen
+  showAddAndNewButton = false
 }: TransactionFormProps) {
   const router = useRouter();
-  // État interne pour le dialog - utilisé uniquement si open/onOpenChange ne sont pas fournis
-  const [internalOpen, setInternalOpen] = useState(false);
+  const { isOpen: isDialogOpenFromStore, closeDialog } = useTransactionDialogStore();
   
-  // Déterminer quel état utiliser pour le dialog
-  const isControlled = open !== undefined;
-  const isOpen = isControlled ? open : internalOpen;
-  // Utiliser l'opérateur de fusion nulle à la place de l'opérateur logique OR
-  const setIsOpen = onOpenChange ?? setInternalOpen;
-
   // Crée une ref pour l'input sur lequel on veut mettre le focus
   const amountInputRef = useRef<HTMLInputElement>(null);
   
@@ -112,10 +94,7 @@ export function TransactionForm({
 
   // useEffect pour le focus initial
   useEffect(() => {
-    // On utilise soit isDialogOpen passé en prop, soit isOpen local
-    const dialogIsOpen = isDialogOpen ?? isOpen;
-    
-    if (dialogIsOpen) {
+    if (isDialogOpenFromStore) {
       // Petit délai pour laisser le temps au dialogue d'être rendu
       const timer = setTimeout(() => {
         amountInputRef.current?.focus({ preventScroll: true });
@@ -124,7 +103,7 @@ export function TransactionForm({
       // Nettoie le timer si le composant est démonté
       return () => clearTimeout(timer);
     }
-  }, [isDialogOpen, isOpen]);
+  }, [isDialogOpenFromStore]);
 
   const isEditMode = mode === "edit";
 
@@ -198,24 +177,17 @@ export function TransactionForm({
       
       // Remet le focus sur le montant après reset
       setTimeout(() => amountInputRef.current?.focus(), 50);
-      // Ne pas fermer le dialogue
+      // NE PAS fermer le dialogue
     } else {
       // Pour "Ajouter" ou "Modifier" : reset complet et fermeture
       form.reset();
       
-      // Fermer le dialogue si contrôlé de l'extérieur
-      if (isControlled) {
-        setIsOpen(false);
-      }
+      // Fermer le dialogue via le store Zustand
+      closeDialog();
     }
     
     // Réinitialiser l'action par défaut pour la prochaine fois
     setSubmitAction('save');
-    
-    // Appeler le callback onSuccess si fourni
-    if (onSuccess) {
-      onSuccess();
-    }
   };
   
   // Fonction de gestion des erreurs des mutations
@@ -283,7 +255,9 @@ export function TransactionForm({
     }
   }
 
+  // Déterminer s'il y a une opération en cours
   const isPending = createTransaction.isPending || updateTransaction.isPending;
+  
   const dialogTitle = isEditMode ? "Modifier la transaction" : "Ajouter une transaction";
   const dialogDescription = isEditMode 
     ? "Modifiez les détails de cette transaction" 
@@ -310,202 +284,7 @@ export function TransactionForm({
     ) : undefined,
   }));
 
-  // Le contenu du formulaire
-  const formContent = (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-        {/* Type de transaction (Revenu/Dépense) */}
-        <FormField
-          control={form.control}
-          name="transactionType"
-          render={({ field }) => (
-            <FormItem className="space-y-1">
-              <FormLabel>Type de transaction</FormLabel>
-              <FormControl>
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  className="grid grid-cols-2"
-                >
-                  <ToggleGroupItem value="income" aria-label="Revenu">
-                    <ArrowUpCircle className="mr-2 h-4 w-4 text-green-500" />
-                    Revenu
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="expense" aria-label="Dépense">
-                    <ArrowDownCircle className="mr-2 h-4 w-4 text-red-500" />
-                    Dépense
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Montant (toujours positif) */}
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Montant</FormLabel>
-              <FormControl>
-                <Input
-                  ref={amountInputRef}
-                  placeholder="0.00"
-                  type="number"
-                  step="0.01"
-                  value={field.value === 0 && !isEditMode ? '' : field.value}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    field.onChange(val === '' ? 0 : parseFloat(val));
-                  }}
-                />
-              </FormControl>
-              <FormDescription>
-                Entrez le montant (toujours positif). Utilisez les boutons ci-dessus pour indiquer s&apos;il s&apos;agit d&apos;un revenu ou d&apos;une dépense.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Compte Bancaire */}
-        <ComboboxField
-          control={form.control}
-          name="bankAccountId"
-          label="Compte Bancaire *"
-          options={accountOptions}
-          placeholder="Sélectionner un compte..."
-          searchPlaceholder="Rechercher un compte..."
-          emptyText="Aucun compte trouvé."
-          description={!bankAccounts || (bankAccounts && bankAccounts.length === 0) ? 
-            <span>Veuillez d&apos;abord <Link href="/accounts" className="underline">ajouter un compte bancaire</Link>.</span> : undefined}
-        />
-
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Ex: Courses au supermarché" 
-                  value={field.value ?? ''} 
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Date */}
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className="w-full pl-3 text-left font-normal"
-                    >
-                      {field.value ? (
-                        format(field.value, "dd MMMM yyyy", { locale: fr })
-                      ) : (
-                        <span>Choisir une date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Catégorie */}
-        <ComboboxField
-          control={form.control}
-          name="categoryId"
-          label="Catégorie"
-          options={categoryOptions}
-          placeholder="Sélectionner une catégorie..."
-          searchPlaceholder="Rechercher une catégorie..."
-          emptyText="Aucune catégorie trouvée."
-          allowNull={true}
-          nullLabel="-- Non catégorisé --"
-        />
-
-        <DialogFooter className="flex gap-2">
-          {/* Afficher "Ajouter et Nouveau" seulement en mode création */}
-          {!isEditMode && (
-            <Button
-              type="submit"
-              variant="secondary"
-              disabled={isPending}
-              onClick={() => setSubmitAction('saveAndNew')}
-            >
-              {createTransaction.isPending && submitAction === 'saveAndNew' ? "Ajout en cours..." : "Ajouter et Nouveau"}
-            </Button>
-          )}
-          <Button 
-            type="submit" 
-            disabled={isPending}
-            onClick={() => setSubmitAction('save')}
-          >
-            {isPending && submitAction === 'save'
-              ? (isEditMode ? "Modification en cours..." : "Ajout en cours...")
-              : (isEditMode ? "Modifier" : "Ajouter")
-            }
-          </Button>
-        </DialogFooter>
-      </form>
-    </Form>
-  );
-
-  // Si children est fourni, on rend un Dialog avec children comme trigger
-  // Sinon, on rend juste le contenu du formulaire (pour l'intégrer dans un Dialog externe)
-  if (children) {
-    return (
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          {children}
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>
-              {dialogDescription}
-            </DialogDescription>
-          </DialogHeader>
-          {formContent}
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Si pas d'enfants, retourner uniquement le contenu (sans Dialog)
+  // POINT DE RETOUR UNIQUE ET INCONDITIONNEL
   return (
     <>
       <DialogHeader>
@@ -514,7 +293,199 @@ export function TransactionForm({
           {dialogDescription}
         </DialogDescription>
       </DialogHeader>
-      {formContent}
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          {/* Type de transaction (Revenu/Dépense) */}
+          <FormField
+            control={form.control}
+            name="transactionType"
+            render={({ field }) => (
+              <FormItem className="space-y-1">
+                <FormLabel>Type de transaction</FormLabel>
+                <FormControl>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="grid grid-cols-2"
+                  >
+                    <ToggleGroupItem value="income" aria-label="Revenu">
+                      <ArrowUpCircle className="mr-2 h-4 w-4 text-green-500" />
+                      Revenu
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="expense" aria-label="Dépense">
+                      <ArrowDownCircle className="mr-2 h-4 w-4 text-red-500" />
+                      Dépense
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Montant (toujours positif) */}
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Montant</FormLabel>
+                <FormControl>
+                  <Input
+                    ref={amountInputRef}
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                    value={field.value === 0 && !isEditMode ? '' : field.value}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      field.onChange(val === '' ? 0 : parseFloat(val));
+                    }}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Entrez le montant (toujours positif). Utilisez les boutons ci-dessus pour indiquer s&apos;il s&apos;agit d&apos;un revenu ou d&apos;une dépense.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Compte Bancaire */}
+          <ComboboxField
+            control={form.control}
+            name="bankAccountId"
+            label="Compte Bancaire *"
+            options={accountOptions}
+            placeholder="Sélectionner un compte..."
+            searchPlaceholder="Rechercher un compte..."
+            emptyText="Aucun compte trouvé."
+            description={!bankAccounts || (bankAccounts && bankAccounts.length === 0) ? 
+              <span>Veuillez d&apos;abord <Link href="/accounts" className="underline">ajouter un compte bancaire</Link>.</span> : undefined}
+          />
+
+          {/* Description */}
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Ex: Courses au supermarché" 
+                    value={field.value ?? ''} 
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Date */}
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className="w-full pl-3 text-left font-normal"
+                      >
+                        {field.value ? (
+                          format(field.value, "dd MMMM yyyy", { locale: fr })
+                        ) : (
+                          <span>Choisir une date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Catégorie */}
+          <ComboboxField
+            control={form.control}
+            name="categoryId"
+            label="Catégorie"
+            options={categoryOptions}
+            placeholder="Sélectionner une catégorie..."
+            searchPlaceholder="Rechercher une catégorie..."
+            emptyText="Aucune catégorie trouvée."
+            allowNull={true}
+            nullLabel="-- Non catégorisé --"
+          />
+
+          <DialogFooter className={cn(
+            "flex flex-col-reverse pt-4 sm:flex-row sm:justify-between sm:space-x-4"
+          )}>
+            {/* Bouton Annuler à gauche */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeDialog}
+              disabled={isPending}
+              className="mt-2 sm:mt-0"
+            >
+              Annuler
+            </Button>
+
+            {/* Groupe pour les boutons de sauvegarde à droite */}
+            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3">
+              {/* Bouton Sauvegarder et Nouveau (conditionnel) */}
+              {!isEditMode && showAddAndNewButton && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setSubmitAction('saveAndNew');
+                    // Il faut appeler form.handleSubmit(onSubmit)() pour déclencher la validation ET la soumission
+                    void form.handleSubmit(onSubmit)(); // Utiliser void pour gérer la promesse retournée
+                  }}
+                  disabled={isPending}
+                >
+                  {isPending && submitAction === 'saveAndNew' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sauvegarder et Nouveau
+                </Button>
+              )}
+
+              {/* Bouton Sauvegarder (action principale) */}
+              <Button
+                type="submit" // Ce bouton reste le type="submit" principal
+                onClick={() => setSubmitAction('save')} // Assurer que l'action est 'save'
+                disabled={isPending}
+              >
+                {/* Afficher le loader si pending ET (action est save OU c'est une édition) */}
+                {isPending && (submitAction === 'save' || isEditMode) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditMode ? "Modifier" : "Sauvegarder"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </Form>
     </>
   );
 }

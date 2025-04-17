@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "~/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { TransactionForm } from "~/components/transactions/transaction-form";
+import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
 
 export function AddTransactionButton() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { openDialog } = useTransactionDialogStore();
+
+  const handleClick = () => {
+    openDialog(undefined, { showAddAndNew: true });
+  };
 
   return (
-    <TransactionForm open={isOpen} onOpenChange={setIsOpen} isDialogOpen={isOpen}>
-      <Button>
-        <PlusCircle className="mr-2 h-4 w-4" />
-        Ajouter Transaction
-      </Button>
-    </TransactionForm>
+    <Button onClick={handleClick}>
+      <PlusCircle className="mr-2 h-4 w-4" />
+      Ajouter Transaction
+    </Button>
   );
 } 

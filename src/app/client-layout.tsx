@@ -3,6 +3,7 @@
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "~/components/ui/sonner";
 import { TRPCReactProvider } from "~/trpc/react";
+import { GlobalTransactionDialog } from "~/components/transactions/global-transaction-dialog";
 
 export default function ClientLayout({
   children,
@@ -14,6 +15,7 @@ export default function ClientLayout({
       <SessionProvider>
         {children}
         <Toaster richColors closeButton position="top-right" />
+        <GlobalTransactionDialog />
       </SessionProvider>
     </TRPCReactProvider>
   );
