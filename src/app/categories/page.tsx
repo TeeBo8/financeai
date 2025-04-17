@@ -1,20 +1,15 @@
-import { CategoryList } from "~/components/categories/category-list";
-import { AddCategoryDialog } from "~/components/categories/add-category-dialog";
+import { CategoriesPageClient } from "~/components/categories/categories-page-client";
+import { api } from "~/trpc/server";
 
-export default function CategoriesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function CategoriesPage() {
+  // Récupération des catégories depuis l'API tRPC côté serveur
+  const categories = await api.category.getAll();
+
   return (
     <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Gestion des Catégories</h1>
-        <AddCategoryDialog />
-      </div>
-
-      <p className="text-muted-foreground mb-6">
-        Créez et gérez vos catégories pour mieux organiser vos transactions et budgets.
-      </p>
-
-      <CategoryList />
-
+      <CategoriesPageClient categories={categories} />
     </div>
   );
 } 
