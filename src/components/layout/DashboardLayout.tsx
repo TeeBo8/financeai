@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Sidebar } from "./Sidebar";
+import { GlobalTransactionDialog } from "~/components/transactions/global-transaction-dialog";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -22,6 +23,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Dialogue global de transaction contrôlé par le store Zustand */}
+      <GlobalTransactionDialog />
     </div>
   );
 } 

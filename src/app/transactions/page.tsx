@@ -15,8 +15,9 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { toast } from "sonner";
-import { TransactionsList, type Transaction } from "~/components/transactions/transactions-list";
+import { TransactionsDataTable } from "~/components/transactions/transactions-data-table";
 import type { TransactionData } from "~/components/transactions/transaction-form";
+import type { TransactionWithRelations } from "~/lib/types";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
 
 // Structure pour les filtres
@@ -30,12 +31,12 @@ interface TransactionFilters {
 export default function TransactionsPage() {
   // États pour le dialogue/édition
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionWithRelations | null>(null);
 
   // Helper pour préparer les données de la transaction pour le formulaire
-  const prepareTransactionData = (transaction: Transaction): TransactionData => ({
+  const prepareTransactionData = (transaction: TransactionWithRelations): TransactionData => ({
     id: transaction.id,
-    amount: Number(transaction.amount),
+    amount: typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : Number(transaction.amount),
     description: transaction.description,
     date: new Date(transaction.date),
     categoryId: transaction.categoryId,
@@ -89,10 +90,6 @@ export default function TransactionsPage() {
   // Handlers pour ouvrir le dialogue
   const handleOpenAddDialog = () => {
     setEditingTransaction(null);
-    setIsFormOpen(true);
-  };
-  const handleOpenEditDialog = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
     setIsFormOpen(true);
   };
 
@@ -220,19 +217,16 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Affichage de la liste */}
-      <div className="rounded-md border">
-        {transactionsQuery.data?.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-muted-foreground">
-            Aucune transaction ne correspond à ces critères.
-          </div>
-        ) : (
-          <TransactionsList 
-            transactions={transactionsQuery.data ?? []}
-            onEdit={handleOpenEditDialog}
-          />
-        )}
-      </div>
+      {/* Affichage de la DataTable */}
+      {transactionsQuery.data?.length === 0 ? (
+        <div className="flex h-40 items-center justify-center rounded-md border text-muted-foreground">
+          Aucune transaction ne correspond à ces critères.
+        </div>
+      ) : (
+        <TransactionsDataTable 
+          transactions={transactionsQuery.data as unknown as TransactionWithRelations[]} 
+        />
+      )}
       
        {/* Indicateur de chargement pendant le refetch */}
        {transactionsQuery.isFetching && !isLoading && (
@@ -248,11 +242,7 @@ export default function TransactionsPage() {
             key={editingTransaction ? editingTransaction.id : 'create'}
             transaction={editingTransaction ? prepareTransactionData(editingTransaction) : undefined}
             mode={editingTransaction ? "edit" : "create"}
-            onSuccess={() => {
-              setIsFormOpen(false);
-              setEditingTransaction(null);
-            }}
-            isDialogOpen={isFormOpen}
+            onSuccess={() => setIsFormOpen(false)}
           />
         </DialogContent>
       </Dialog>
