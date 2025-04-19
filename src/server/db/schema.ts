@@ -168,19 +168,26 @@ export const budgets = pgTable("budget", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 256 }).notNull(),
-  categoryId: text("categoryId")
-    .notNull() // Un budget doit être lié à une catégorie
-    .references(() => categories.id, { onDelete: "cascade" }), // Si la catégorie est supprimée, supprimer le budget
+  // Suppression de categoryId car on utilisera maintenant budgetsToCategories
   // Utiliser decimal pour les montants monétaires
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  period: varchar("period", { length: 10 }).notNull().default('monthly'), // 'monthly', 'weekly', 'custom'
-  startDate: timestamp("start_date", { mode: "date" }).notNull(),
-  endDate: timestamp("end_date", { mode: "date" }).notNull(),
+  period: varchar("period", { length: 50 }).notNull().default('MONTHLY'), // 'MONTHLY', 'YEARLY', 'CUSTOM'
+  // Rendre startDate et endDate optionnels pour les périodes standard
+  startDate: timestamp("start_date", { mode: "date" }), // Optionnel - pour période custom
+  endDate: timestamp("end_date", { mode: "date" }), // Optionnel - pour période custom
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
 }, (table) => ({
   userIdx: index("budget_userId_idx").on(table.userId),
-  categoryIdx: index("budget_categoryId_idx").on(table.categoryId),
+}));
+
+// Table de jointure Budget <-> Catégorie
+export const budgetsToCategories = pgTable("budgets_to_categories", {
+  budgetId: text("budget_id").notNull().references(() => budgets.id, { onDelete: "cascade" }),
+  categoryId: text("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+}, (t) => ({
+  // Clé primaire composite
+  pk: primaryKey({ columns: [t.budgetId, t.categoryId] }),
 }));
 
 
@@ -199,6 +206,7 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   user: one(users, { fields: [categories.userId], references: [users.id] }),
   transactions: many(transactions),
   budgets: many(budgets),
+  budgetsToCategories: many(budgetsToCategories), // Nouvelle relation via table de jointure
 }));
 
 // =============================================
@@ -219,9 +227,14 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
-export const budgetsRelations = relations(budgets, ({ one }) => ({
+export const budgetsRelations = relations(budgets, ({ one, many }) => ({
   user: one(users, { fields: [budgets.userId], references: [users.id] }),
-  category: one(categories, { fields: [budgets.categoryId], references: [categories.id] }),
+  budgetsToCategories: many(budgetsToCategories), // Relation vers la table de jointure
+}));
+
+export const budgetsToCategoriesRelations = relations(budgetsToCategories, ({ one }) => ({
+  budget: one(budgets, { fields: [budgetsToCategories.budgetId], references: [budgets.id] }),
+  category: one(categories, { fields: [budgetsToCategories.categoryId], references: [categories.id] }),
 }));
 
 // Relations Auth.js (souvent gérées par l'adapter, mais bon à avoir pour la clarté)

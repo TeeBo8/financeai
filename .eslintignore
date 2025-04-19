@@ -1,0 +1,3 @@
+# Ignorer les composants UI qui ne sont pas notre code principal
+src/components/ui/command.tsx
+src/components/categories/columns.tsx 

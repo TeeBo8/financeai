@@ -1,6 +1,6 @@
 {
-  "id": "02d96163-b9bf-4145-b28a-224494febfa1",
-  "prevId": "801a6ea7-c348-4aeb-bc36-eb70436deb72",
+  "id": "c1f5ed01-4631-4853-a5ca-43bcdd827964",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -211,9 +211,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "categoryId": {
-          "name": "categoryId",
-          "type": "text",
+        "name": {
+          "name": "name",
+          "type": "varchar(256)",
           "primaryKey": false,
           "notNull": true
         },
@@ -223,17 +223,24 @@
           "primaryKey": false,
           "notNull": true
         },
+        "period": {
+          "name": "period",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MONTHLY'"
+        },
         "start_date": {
           "name": "start_date",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "end_date": {
           "name": "end_date",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -264,21 +271,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "budget_categoryId_idx": {
-          "name": "budget_categoryId_idx",
-          "columns": [
-            {
-              "expression": "categoryId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -294,13 +286,52 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.finance-ai_budgets_to_categories": {
+      "name": "finance-ai_budgets_to_categories",
+      "schema": "",
+      "columns": {
+        "budget_id": {
+          "name": "budget_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
-        "finance-ai_budget_categoryId_finance-ai_category_id_fk": {
-          "name": "finance-ai_budget_categoryId_finance-ai_category_id_fk",
-          "tableFrom": "finance-ai_budget",
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "finance-ai_budgets_to_categories_budget_id_finance-ai_budget_id_fk": {
+          "name": "finance-ai_budgets_to_categories_budget_id_finance-ai_budget_id_fk",
+          "tableFrom": "finance-ai_budgets_to_categories",
+          "tableTo": "finance-ai_budget",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "finance-ai_budgets_to_categories_category_id_finance-ai_category_id_fk": {
+          "name": "finance-ai_budgets_to_categories_category_id_finance-ai_category_id_fk",
+          "tableFrom": "finance-ai_budgets_to_categories",
           "tableTo": "finance-ai_category",
           "columnsFrom": [
-            "categoryId"
+            "category_id"
           ],
           "columnsTo": [
             "id"
@@ -309,7 +340,15 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "finance-ai_budgets_to_categories_budget_id_category_id_pk": {
+          "name": "finance-ai_budgets_to_categories_budget_id_category_id_pk",
+          "columns": [
+            "budget_id",
+            "category_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

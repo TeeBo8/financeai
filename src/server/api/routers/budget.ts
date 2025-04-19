@@ -1,18 +1,24 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { budgets, transactions } from "~/server/db/schema";
-import { and, eq, sql, desc, lt } from "drizzle-orm";
+import { budgets, budgetsToCategories, categories, transactions } from "~/server/db/schema";
+import { eq, and, sql, gte, lte, inArray, sum, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { revalidatePath } from "next/cache";
+import { startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'; // Pour les périodes
 
-// Import date-fns functions
-import {
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  isValid, // To check date validity
-  endOfDay // Ajout de endOfDay pour inclure la fin de journée
-} from 'date-fns';
+// Helper pour obtenir les dates de début/fin de la période courante
+function getCurrentPeriod(period: string): { startDate: Date, endDate: Date } {
+    const now = new Date();
+    switch (period.toUpperCase()) {
+        case 'MONTHLY':
+            return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
+        case 'YEARLY':
+            return { startDate: startOfYear(now), endDate: endOfYear(now) };
+        // TODO: Gérer 'CUSTOM' si implémenté
+        default: // Par défaut, mensuel
+            return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
+    }
+}
 
 // Schema de base pour la création/modification (sans l'ID pour la création)
 const budgetInputSchemaBase = z.object({
@@ -28,367 +34,241 @@ const budgetInputSchemaBase = z.object({
 
 export const budgetRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    const now = new Date(); // Get the current date/time
-
-    // 1. Fetch all budgets for the user, including category details
-    const userBudgets = await ctx.db.query.budgets.findMany({
-      where: eq(budgets.userId, userId),
-      with: {
-        category: true, // Include linked category data
-      },
-      orderBy: [desc(budgets.createdAt)], // Optional: order them
-    });
-
-    if (userBudgets.length === 0) {
-      return []; // Return empty array if no budgets
-    }
-
-    // 2. Determine the overall date range to fetch relevant transactions
-    //    This avoids fetching *all* transactions if possible.
-    //    We need to calculate the *potential* start and end dates for *all* budgets first.
-    let overallMinDate: Date | null = null;
-    let overallMaxDate: Date | null = null;
-
-    userBudgets.forEach(budget => {
-        // Ensure budget dates are valid Date objects
-        const budgetStartDate = budget.startDate ? new Date(budget.startDate) : null;
-        const budgetEndDate = budget.endDate ? new Date(budget.endDate) : null;
-
-        if (!budgetStartDate || !isValid(budgetStartDate)) return; // Skip if start date is invalid
-
-        let periodStartDate: Date | null = null;
-        let periodEndDate: Date | null = null;
-
-        switch (budget.period) {
-            case 'monthly':
-                periodStartDate = startOfMonth(now);
-                periodEndDate = endOfMonth(now);
-                break;
-            case 'weekly':
-                // Ensure startOfWeek uses the locale you prefer (e.g., { weekStartsOn: 1 } for Monday)
-                // Default is usually Sunday (0)
-                periodStartDate = startOfWeek(now, { weekStartsOn: 1 }); // Week starts on Monday
-                periodEndDate = endOfWeek(now, { weekStartsOn: 1 });
-                break;
-            case 'custom':
-                periodStartDate = budgetStartDate;
-                // If custom end date is null, it means ongoing up to now for calculation purposes
-                periodEndDate = budgetEndDate && isValid(budgetEndDate) ? budgetEndDate : now;
-                break;
-            default:
-                 // Should not happen based on schema enum, but good practice
-                 return;
-        }
-
-        // The effective period for *this* budget is the intersection of its defined dates
-        // and the calculated period (monthly/weekly/custom range up to now).
-        // Choose the later date as the start
-        const effectiveStartDate = periodStartDate && budgetStartDate ? 
-            (periodStartDate > budgetStartDate ? periodStartDate : budgetStartDate) : 
-            (budgetStartDate || periodStartDate);
-            
-        // If budget has no end date (null), use the period's end date.
-        // If budget has an end date, use the minimum of budget end date and period end date.
-        // Choose the earlier date as the end
-        const effectiveEndDate = periodEndDate && budgetEndDate && isValid(budgetEndDate) ? 
-            (periodEndDate < budgetEndDate ? periodEndDate : budgetEndDate) : 
-            (periodEndDate || now);
-
-        // --- AJOUT : S'assurer que la date de fin inclut toute la journée ---
-        let finalEffectiveEndDate = effectiveEndDate; 
-        if (finalEffectiveEndDate && isValid(finalEffectiveEndDate)) {
-            finalEffectiveEndDate = endOfDay(finalEffectiveEndDate); // Met l'heure à 23:59:59.999
-        }
-        // --------------------------------------------------------------------
-
-        // Update overall min/max dates needed for transaction query
-        if (effectiveStartDate && finalEffectiveEndDate && effectiveStartDate <= finalEffectiveEndDate) { // Only consider valid intervals
-            if (!overallMinDate || effectiveStartDate < overallMinDate) {
-                overallMinDate = effectiveStartDate;
-            }
-            if (!overallMaxDate || finalEffectiveEndDate > overallMaxDate) {
-                overallMaxDate = finalEffectiveEndDate;
-            }
-        }
-    });
-
-    // 3. Fetch relevant transactions within the overall date range
-    let relevantTransactions: typeof transactions.$inferSelect[] = [];
-    if (overallMinDate && overallMaxDate && overallMinDate <= overallMaxDate) {
-      // Ensure we're working with Date objects
-      const minDate = new Date(overallMinDate);
-      const maxDate = new Date(overallMaxDate);
-      
-      // Format dates as YYYY-MM-DD strings for database query
-      const minDateStr = minDate.toISOString().split('T')[0];
-      // Utiliser le jour complet pour la date max en ajoutant T23:59:59.999Z à la chaîne de date
-      const maxDateIso = maxDate.toISOString();
-      const maxDateStr = maxDateIso.split('T')[0];
-      
-      relevantTransactions = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.userId, userId),
-          // Cast date strings to the proper format for comparison
-          sql`${transactions.date}::date >= ${minDateStr}::date`,
-          sql`${transactions.date}::date <= ${maxDateStr}::date`,
-          lt(transactions.amount, "0") // Only fetch negative amounts (expenses) - as string since it's stored as string in DB
-        ),
-        // No need to order here, we'll filter in memory
+      // 1. Récupérer tous les budgets de l'utilisateur avec leurs catégories associées
+      const userBudgets = await ctx.db.query.budgets.findMany({
+          where: eq(budgets.userId, ctx.session.user.id),
+          with: {
+              // Récupérer les IDs des catégories liées via la table de jointure
+              budgetsToCategories: {
+                  with: {
+                      category: true // Récupérer également les infos de catégorie
+                  }
+              }
+          },
+          orderBy: desc(budgets.createdAt) // Ou par nom ?
       });
-    }
 
-    // 4. Calculate spent amount for each budget
-    const budgetsWithSpentAmount = userBudgets.map(budget => {
-      // Recalculate the effective dates for *this specific* budget again
-      const budgetStartDate = budget.startDate ? new Date(budget.startDate) : null;
-      const budgetEndDate = budget.endDate ? new Date(budget.endDate) : null;
+      if (userBudgets.length === 0) return [];
 
-      if (!budgetStartDate || !isValid(budgetStartDate)) {
-           return { ...budget, spentAmount: 0, categoryName: budget.category?.name ?? null }; // Return with 0 spent if invalid start date
-      }
-
-      let periodStartDate: Date | null = null;
-      let periodEndDate: Date | null = null;
-
-      switch (budget.period) {
-        case 'monthly':
-          periodStartDate = startOfMonth(now);
-          periodEndDate = endOfMonth(now);
-          break;
-        case 'weekly':
-          periodStartDate = startOfWeek(now, { weekStartsOn: 1 });
-          periodEndDate = endOfWeek(now, { weekStartsOn: 1 });
-          break;
-        case 'custom':
-          periodStartDate = budgetStartDate;
-          periodEndDate = budgetEndDate && isValid(budgetEndDate) ? budgetEndDate : now;
-          break;
-        default:
-          return { ...budget, spentAmount: 0, categoryName: budget.category?.name ?? null }; // Should not happen
-      }
-
-      // Choose the later date as the start
-      const effectiveStartDate = periodStartDate && budgetStartDate ? 
-          (periodStartDate > budgetStartDate ? periodStartDate : budgetStartDate) : 
-          (budgetStartDate || periodStartDate);
+      // 2. Pour chaque budget, calculer le montant dépensé dans la période courante
+      const budgetsWithSpending = await Promise.all(userBudgets.map(async (budget) => {
+          const categoryIds = budget.budgetsToCategories.map(btc => btc.category.id);
           
-      // Choose the earlier date as the end
-      const effectiveEndDate = periodEndDate && budgetEndDate && isValid(budgetEndDate) ? 
-          (periodEndDate < budgetEndDate ? periodEndDate : budgetEndDate) : 
-          (periodEndDate || now);
+          // Préparer un tableau des noms de catégories pour l'affichage
+          const categoryNames = budget.budgetsToCategories.map(btc => btc.category.name);
+          const categoryDisplay = categoryNames.join(", ");
+          
+          let spentAmount = 0;
 
-      // --- AJOUT : S'assurer que la date de fin inclut toute la journée ---
-      let finalEffectiveEndDate = effectiveEndDate; 
-      if (finalEffectiveEndDate && isValid(finalEffectiveEndDate)) {
-          finalEffectiveEndDate = endOfDay(finalEffectiveEndDate); // Met l'heure à 23:59:59.999
-      }
-      // --------------------------------------------------------------------
+          // Si le budget n'est lié à aucune catégorie, les dépenses sont 0
+          if (categoryIds.length > 0) {
+              const { startDate, endDate } = getCurrentPeriod(budget.period);
 
-      let spentAmount = 0;
+              // 3. Sommer les dépenses (montants négatifs) dans les catégories liées pour la période
+              const result = await ctx.db
+                  .select({
+                      totalSpent: sum(sql<number>`abs(${transactions.amount})`).mapWith(Number)
+                  })
+                  .from(transactions)
+                  .where(and(
+                      eq(transactions.userId, ctx.session.user.id),
+                      inArray(transactions.categoryId, categoryIds), // Transactions dans les catégories liées
+                      gte(transactions.date, startDate),              // Dans la période de temps
+                      lte(transactions.date, endDate),
+                      sql`${transactions.amount} < 0`                 // Uniquement les dépenses
+                  ))
+                  .execute(); // Utiliser execute() car on ne retourne qu'une agrégation
 
-      // Filter the fetched transactions for this budget
-      if (effectiveStartDate && finalEffectiveEndDate && effectiveStartDate <= finalEffectiveEndDate) { // Check interval validity
-        const transactionsForBudget = relevantTransactions.filter(tx => {
-            const txDate = new Date(tx.date); // Ensure tx.date is a Date object
-            if (!isValid(txDate)) return false; // Skip invalid transaction dates
+              spentAmount = result[0]?.totalSpent ?? 0;
+          }
 
-            // Check if transaction date is within the budget's effective interval
-            // Utilise finalEffectiveEndDate ici pour inclure toute la journée
-            const isDateInRange = txDate >= effectiveStartDate && txDate <= finalEffectiveEndDate;
-            if (!isDateInRange) return false;
+          // Drizzle retourne les décimaux comme string, on les convertit
+          const budgetAmount = parseFloat(budget.amount as string);
 
-            // Check category match
-            // If budget categoryId is null, it applies to all categories
-            // Otherwise, transaction categoryId must match budget categoryId
-            const isCategoryMatch = budget.categoryId === null || tx.categoryId === budget.categoryId;
+          // Créer un nouvel objet sans faire référence à la structure d'origine
+          return {
+              id: budget.id,
+              name: budget.name,
+              userId: budget.userId,
+              amount: budgetAmount,
+              period: budget.period,
+              startDate: budget.startDate,
+              endDate: budget.endDate,
+              createdAt: budget.createdAt,
+              updatedAt: budget.updatedAt,
+              // Données calculées
+              spentAmount: spentAmount,
+              remainingAmount: budgetAmount - spentAmount,
+              categoryDisplay: categoryDisplay,
+              // Inclure les relations pour l'affichage si nécessaire
+              budgetsToCategories: budget.budgetsToCategories
+          };
+      }));
 
-            return isCategoryMatch; // No need to check amount < 0 again, already filtered in query
-        });
-
-        // Sum the absolute values of the amounts
-        spentAmount = transactionsForBudget.reduce((sum, tx) => {
-            // Ensure amount is treated as a number and take absolute value
-            const amountValue = Number(tx.amount);
-            return sum + Math.abs(amountValue);
-        }, 0);
-      }
-
-      // Return the budget object augmented with spentAmount and categoryName
-      return {
-        ...budget,
-        spentAmount: spentAmount,
-        // Add categoryName for convenience in the frontend
-        categoryName: budget.category?.name ?? null,
-      };
-    });
-
-    return budgetsWithSpentAmount;
-
+      return budgetsWithSpending;
   }),
 
   create: protectedProcedure
-    .input(budgetInputSchemaBase)
+    .input(z.object({
+      name: z.string().min(1, "Le nom est requis"),
+      amount: z.coerce.number().positive("Le montant doit être positif"),
+      period: z.enum(["MONTHLY", "YEARLY"]),
+      categoryIds: z.array(z.string()).default([]),
+    }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-
-      if (input.endDate && input.startDate > input.endDate) {
-           throw new TRPCError({
-               code: 'BAD_REQUEST',
-               message: 'La date de début ne peut pas être après la date de fin.',
-           });
-      }
-
       try {
-        // Préparer les données qui correspondent exactement aux noms de propriétés 
-        // du schéma Drizzle pour 'budgets'
-        const budgetData: typeof budgets.$inferInsert = {
-          userId,
-          name: input.name,
-          amount: input.amount.toString(),
-          period: input.period,
-          startDate: input.startDate,
-          endDate: input.endDate ?? new Date(),
-          // Dans le schéma DB, categoryId est .notNull(), on ne peut pas stocker null
-          // On utilise une chaîne vide comme valeur par défaut si null
-          categoryId: input.categoryId ?? '',
-        };
-
+        // Version plus simple et robuste
+        const { name, amount, period, categoryIds } = input;
+        
+        // S'assurer que categoryIds est un tableau
+        const cleanedCategoryIds = Array.isArray(categoryIds) ? categoryIds.filter(Boolean) : [];
+        
+        // 1. Créer le budget
         const [newBudget] = await ctx.db
           .insert(budgets)
-          .values(budgetData)
+          .values({
+            name,
+            amount: amount.toString(),
+            period,
+            userId: ctx.session.user.id,
+            startDate: new Date(),
+            endDate: null,
+          })
           .returning();
 
-        return newBudget;
+        if (!newBudget) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Échec de la création du budget"
+          });
+        }
 
+        // 2. Créer les associations avec les catégories seulement si des catégories existent
+        if (cleanedCategoryIds.length > 0) {
+          try {
+            await ctx.db
+              .insert(budgetsToCategories)
+              .values(
+                cleanedCategoryIds.map(categoryId => ({
+                  budgetId: newBudget.id,
+                  categoryId
+                }))
+              );
+          } catch (error) {
+            // Continuer même si l'association échoue
+          }
+        }
+
+        // 3. Revalider les chemins pour la mise à jour de l'interface
+        revalidatePath("/budgets");
+        revalidatePath("/dashboard");
+
+        return newBudget;
       } catch (error) {
-        // Consider more specific error handling if needed
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Erreur lors de la création du budget.',
-          cause: error,
+          code: "INTERNAL_SERVER_ERROR", 
+          message: error instanceof Error ? error.message : "Erreur inconnue lors de la création du budget"
         });
       }
     }),
 
-  // Procédure pour supprimer un budget
   delete: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().min(1, "ID de budget invalide."),
-      })
-    )
+    .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      const budgetIdToDelete = input.id;
+      // 1. Vérifier si le budget appartient à l'utilisateur
+       const budget = await ctx.db.query.budgets.findFirst({
+        where: (b, { eq, and }) => and(
+            eq(b.id, input.id),
+            eq(b.userId, ctx.session.user.id)
+        ),
+        columns: { id: true } // Juste besoin de l'ID pour confirmer l'existence et la propriété
+      });
 
-      try {
-        // On utilise Drizzle pour supprimer
-        // La clause 'where' est cruciale pour la sécurité :
-        // - On cible le bon budget par son ID (eq(budgets.id, budgetIdToDelete))
-        // - ET on s'assure qu'il appartient bien à l'utilisateur connecté (eq(budgets.userId, userId))
-        const deleteResult = await ctx.db
-          .delete(budgets)
-          .where(
-            and(
-              eq(budgets.id, budgetIdToDelete),
-              eq(budgets.userId, userId) // <-- Vérification de propriété !
-            )
-          )
-          .returning({ deletedId: budgets.id }); // Retourne l'ID si la suppression a réussi
-
-        // Vérifier si une ligne a été effectivement supprimée
-        // Si deleteResult est vide, c'est que le budget n'existait pas OU n'appartenait pas à l'utilisateur
-        if (deleteResult.length === 0) {
-          throw new TRPCError({
-            code: 'NOT_FOUND', // Ou 'FORBIDDEN', au choix
-            message: "Le budget que vous essayez de supprimer n'a pas été trouvé ou ne vous appartient pas.",
-          });
-        }
-
-        return { success: true, deletedId: deleteResult[0]?.deletedId };
-
-      } catch (error) {
-        // Si l'erreur est déjà une TRPCError (comme celle du NOT_FOUND), on la relance telle quelle
-        if (error instanceof TRPCError) {
-            throw error;
-        }
-        // Sinon, c'est probablement une erreur de base de données ou autre
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Une erreur est survenue lors de la suppression du budget.',
-          cause: error, // On peut inclure l'erreur originale pour le débogage serveur
-        });
+       if (!budget) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Budget non trouvé." });
       }
+
+      // 2. Supprimer les liens dans la table de jointure (important!)
+      await ctx.db.delete(budgetsToCategories)
+        .where(eq(budgetsToCategories.budgetId, input.id));
+
+      // 3. Supprimer le budget lui-même
+      const deletedBudget = await ctx.db
+        .delete(budgets)
+        .where(eq(budgets.id, input.id))
+        .returning();
+
+      if (deletedBudget.length === 0) {
+         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Échec de la suppression du budget." });
+       }
+
+      // 4. Invalider les caches
+      revalidatePath("/budgets");
+      revalidatePath("/dashboard"); // Potentiellement affecté si le dashboard affiche des infos de budget
+
+      return deletedBudget[0];
     }),
     
   // --- Nouvelle Procédure : Update ---
   update: protectedProcedure
-    .input(
-      // On prend le schéma de base et on le rend partiel (tous les champs optionnels)
-      // Puis on le fusionne (.extend) avec un objet contenant l'ID obligatoire
-      budgetInputSchemaBase.partial().extend({
-        id: z.string().min(1, "ID de budget requis pour la mise à jour."),
-      })
-    )
+    .input(z.object({
+      id: z.string(),
+      name: z.string().min(1, "Le nom est requis").optional(),
+      amount: z.coerce.number().positive("Le montant doit être positif").optional(),
+      period: z.enum(["MONTHLY", "YEARLY", "CUSTOM"]).optional(),
+      categoryIds: z.array(z.string()).min(1, "Sélectionnez au moins une catégorie").optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      const { id: budgetId, ...updateData } = input; // Sépare l'ID du reste des données
+      const { id, name, amount, period, categoryIds } = input;
 
-      // Validation logique spécifique à l'update si nécessaire (ex: cohérence des dates)
-      // Simple check si les deux sont dans l'input:
-      if (updateData.startDate && updateData.endDate && updateData.startDate > updateData.endDate) {
+      // 1. Vérifier si le budget appartient à l'utilisateur
+      const budget = await ctx.db.query.budgets.findFirst({
+        where: and(
+          eq(budgets.id, id),
+          eq(budgets.userId, ctx.session.user.id)
+        ),
+        columns: { id: true }
+      });
+
+      if (!budget) {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'La date de début ne peut pas être après la date de fin.',
+          code: "NOT_FOUND",
+          message: "Budget non trouvé"
         });
       }
 
-      try {
-        // Préparation des données à mettre à jour
-        const setData: Record<string, unknown> = { 
-          ...updateData,
-          updatedAt: new Date() 
-        };
-        
-        // Si amount est défini, le convertir en string
-        if (updateData.amount !== undefined) {
-          setData.amount = updateData.amount.toString();
-        }
-        
-        // Mise à jour dans la DB
-        const updatedBudgets = await ctx.db
-          .update(budgets)
-          .set(setData as Partial<typeof budgets.$inferInsert>) // Type plus spécifique pour éviter 'any'
-          .where(
-            and(
-              eq(budgets.id, budgetId),
-              eq(budgets.userId, userId) // <-- Vérification de propriété !
-            )
-          )
-          .returning(); // Retourne l'objet budget complet mis à jour
+      // 2. Mettre à jour le budget
+      const updateData: Partial<typeof budgets.$inferInsert> = {};
+      if (name) updateData.name = name;
+      if (amount) updateData.amount = amount.toString();
+      if (period) updateData.period = period;
 
-        // Vérifier si une ligne a été effectivement mise à jour
-        if (updatedBudgets.length === 0) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: "Le budget que vous essayez de modifier n'a pas été trouvé ou ne vous appartient pas.",
-          });
-        }
+      const [updatedBudget] = await ctx.db
+        .update(budgets)
+        .set(updateData)
+        .where(eq(budgets.id, id))
+        .returning();
 
-        const updatedBudget = updatedBudgets[0];
-        return updatedBudget; // Retourne le budget mis à jour
+      // 3. Mettre à jour les relations avec les catégories si nécessaire
+      if (categoryIds && categoryIds.length > 0) {
+        // 3.1 Supprimer les anciennes relations
+        await ctx.db
+          .delete(budgetsToCategories)
+          .where(eq(budgetsToCategories.budgetId, id));
 
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Une erreur est survenue lors de la modification du budget.',
-          cause: error,
-        });
+        // 3.2 Créer les nouvelles relations
+        const budgetCategoryLinks = categoryIds.map(categoryId => ({
+          budgetId: id,
+          categoryId
+        }));
+
+        await ctx.db
+          .insert(budgetsToCategories)
+          .values(budgetCategoryLinks);
       }
+
+      // 4. Retourner le budget mis à jour
+      return updatedBudget;
     }),
   // --- Fin de la Procédure : Update ---
 
