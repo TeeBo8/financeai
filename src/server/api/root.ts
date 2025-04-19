@@ -5,6 +5,7 @@ import { budgetRouter } from "~/server/api/routers/budget";
 import { bankAccountRouter } from "~/server/api/routers/bankAccount";
 import { reportRouter } from "~/server/api/routers/report";
 import { dashboardRouter } from "~/server/api/routers/dashboard";
+import { aiRouter } from "~/server/api/routers/ai";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
   bankAccount: bankAccountRouter,
   report: reportRouter,
   dashboard: dashboardRouter,
+  ai: aiRouter,
 });
 
 // export type definition of API

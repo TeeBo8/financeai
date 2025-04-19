@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowUpCircle, ArrowDownCircle, Loader2 } from "lucide-react";
+import { CalendarIcon, ArrowUpCircle, ArrowDownCircle, Loader2, WandSparkles } from "lucide-react";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -145,6 +145,12 @@ export function TransactionForm({
     },
   });
 
+  // Hook pour observer la valeur de la description sans re-render tout le formulaire
+  const currentDescription = useWatch<FormValues, 'description'>({ 
+    control: form.control, 
+    name: 'description' 
+  });
+
   // Fonction de gestion du succès des mutations
   const handleMutationSuccess = async () => {
     // Notification de succès
@@ -207,6 +213,22 @@ export function TransactionForm({
   const updateTransaction = api.transaction.update.useMutation({
     onSuccess: handleMutationSuccess,
     onError: handleMutationError,
+  });
+
+  // Mutation pour suggérer une catégorie
+  const suggestCategoryMutation = api.ai.suggestCategory.useMutation({
+    onSuccess: (data) => {
+      if (data.categoryId && data.categoryName) {
+        // Met à jour la valeur du champ categoryId dans le formulaire
+        form.setValue('categoryId', data.categoryId, { shouldValidate: true, shouldDirty: true });
+        toast.success(`Catégorie suggérée : ${data.categoryName}`);
+      } else {
+        toast.info("Aucune catégorie pertinente suggérée.");
+      }
+    },
+    onError: (error) => {
+      toast.error(`Erreur de suggestion : ${error.message}`);
+    },
   });
 
   // Gérer la soumission du formulaire
@@ -426,17 +448,51 @@ export function TransactionForm({
             )}
           />
 
-          {/* Catégorie */}
-          <ComboboxField
+          {/* Catégorie (avec bouton de suggestion) */}
+          <FormField
             control={form.control}
             name="categoryId"
-            label="Catégorie"
-            options={categoryOptions}
-            placeholder="Sélectionner une catégorie..."
-            searchPlaceholder="Rechercher une catégorie..."
-            emptyText="Aucune catégorie trouvée."
-            allowNull={true}
-            nullLabel="-- Non catégorisé --"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Catégorie</FormLabel>
+                <div className="flex items-center space-x-2">
+                  <FormControl className="flex-grow">
+                    <ComboboxField
+                      control={form.control}
+                      name="categoryId"
+                      label=""
+                      options={categoryOptions}
+                      placeholder="Sélectionner une catégorie..."
+                      searchPlaceholder="Rechercher une catégorie..."
+                      emptyText="Aucune catégorie trouvée."
+                      allowNull={true}
+                      nullLabel="-- Non catégorisé --"
+                    />
+                  </FormControl>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      if (currentDescription && currentDescription.length >= 3) {
+                        suggestCategoryMutation.mutate({ description: currentDescription });
+                      } else {
+                        toast.warning("Veuillez saisir une description plus longue pour obtenir une suggestion.");
+                      }
+                    }}
+                    disabled={suggestCategoryMutation.isPending || !currentDescription || currentDescription.length < 3}
+                    title="Suggérer une catégorie basée sur la description"
+                  >
+                    {suggestCategoryMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <WandSparkles className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
           />
 
           <DialogFooter className={cn(
