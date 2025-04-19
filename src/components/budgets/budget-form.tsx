@@ -1,13 +1,13 @@
 // src/components/budgets/budget-form.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 export interface BudgetFormData {
     id?: string;
@@ -26,12 +26,27 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
     const utils = api.useUtils();
     const isEditMode = !!initialData?.id;
 
+    console.log("BudgetForm - isEditMode:", isEditMode, "initialData:", initialData);
+
     // État simple sans react-hook-form
     const [name, setName] = useState(initialData?.name || '');
     const [amount, setAmount] = useState(initialData?.amount || 0);
     const [period, setPeriod] = useState(initialData?.period || 'MONTHLY');
     const [selectedCategories, setSelectedCategories] = useState<string[]>(initialData?.categoryIds || []);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // useEffect pour mettre à jour le formulaire quand initialData change
+    useEffect(() => {
+        console.log("BudgetForm useEffect - isEditMode:", isEditMode, "initialData:", initialData);
+        if (isEditMode && initialData) {
+            setName(initialData.name);
+            // Assurer que amount est un nombre pour le formulaire
+            setAmount(typeof initialData.amount === 'string' ? parseFloat(initialData.amount) : initialData.amount);
+            // Assurer que la casse correspond (MONTHLY/YEARLY)
+            setPeriod(initialData.period);
+            // Doit être un tableau d'IDs
+            setSelectedCategories(initialData.categoryIds);
+        }
+    }, [isEditMode, initialData]);
 
     // Chargement des catégories
     const { data: categories, isLoading: isLoadingCategories } = api.category.getAll.useQuery();
@@ -54,7 +69,6 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
         },
         onError: (error) => {
             toast.error(`Erreur lors de la création : ${error.message}`);
-            setIsSubmitting(false);
         },
     });
 
@@ -67,9 +81,11 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
         },
         onError: (error) => {
             toast.error(`Erreur lors de la mise à jour : ${error.message}`);
-            setIsSubmitting(false);
         },
     });
+
+    // État d'attente basé sur les deux mutations
+    const isPending = createBudget.isPending || updateBudget.isPending;
 
     // Soumission du formulaire
     const handleSubmit = (e: React.FormEvent) => {
@@ -85,14 +101,14 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
             return;
         }
 
-        setIsSubmitting(true);
-
         const formData = {
             name,
             amount,
             period,
             categoryIds: selectedCategories
         };
+
+        console.log("Submitting budget:", isEditMode ? "UPDATE" : "CREATE", formData);
 
         if (isEditMode && initialData?.id) {
             updateBudget.mutate({
@@ -114,7 +130,7 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: Courses mensuelles" 
-                    disabled={isSubmitting} 
+                    disabled={isPending} 
                 />
             </div>
 
@@ -129,7 +145,7 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
                     placeholder="Ex: 150"
                     step="0.01"
                     min="0"
-                    disabled={isSubmitting}
+                    disabled={isPending}
                 />
                 <p className="text-sm text-muted-foreground">
                     Montant maximum que vous souhaitez dépenser
@@ -144,7 +160,7 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
                     value={period}
                     onChange={(e) => setPeriod(e.target.value as "MONTHLY" | "YEARLY")}
                     className="w-full p-2 border rounded"
-                    disabled={isSubmitting}
+                    disabled={isPending}
                 >
                     <option value="MONTHLY">Mensuel</option>
                     <option value="YEARLY">Annuel</option>
@@ -171,19 +187,19 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
                                         selectedCategories.includes(category.id) 
                                             ? 'bg-primary/10 border border-primary/30' 
                                             : 'hover:bg-muted'
-                                    } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    onClick={() => !isSubmitting && toggleCategory(category.id)}
+                                    } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onClick={() => !isPending && toggleCategory(category.id)}
                                 >
                                     <div className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${
                                         selectedCategories.includes(category.id)
                                             ? 'bg-primary border-primary text-primary-foreground'
                                             : 'border-primary'
-                                    } ${isSubmitting ? 'opacity-50' : ''}`}>
+                                    } ${isPending ? 'opacity-50' : ''}`}>
                                         {selectedCategories.includes(category.id) && (
                                             <Check className="h-3 w-3" />
                                         )}
                                     </div>
-                                    <span className={`${isSubmitting ? 'opacity-50' : ''}`}>{category.name}</span>
+                                    <span className={`${isPending ? 'opacity-50' : ''}`}>{category.name}</span>
                                 </div>
                             ))}
                         </div>
@@ -200,15 +216,16 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
                     type="button" 
                     variant="outline" 
                     onClick={onClose}
-                    disabled={isSubmitting}
+                    disabled={isPending}
                 >
                     Annuler
                 </Button>
                 <Button 
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isPending}
                 >
-                    {isSubmitting ? "Traitement en cours..." : isEditMode ? "Mettre à jour" : "Créer le budget"}
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isEditMode ? "Mettre à jour" : "Créer le budget"}
                 </Button>
             </div>
         </form>

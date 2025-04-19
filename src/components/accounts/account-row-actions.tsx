@@ -24,6 +24,7 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { formatCurrency } from "~/lib/utils";
+import { useAccountDialogStore } from "~/stores/useAccountDialogStore";
 
 // Récupérer le type avec balance si besoin (normalement pas nécessaire ici, l'ID suffit)
 import { type AppRouter } from '~/server/api/root';
@@ -37,6 +38,7 @@ interface AccountRowActionsProps {
 
 export function AccountRowActions({ account }: AccountRowActionsProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { openEditDialog } = useAccountDialogStore();
 
   const utils = api.useUtils(); // Pour invalider les données après suppression
 
@@ -60,9 +62,7 @@ export function AccountRowActions({ account }: AccountRowActionsProps) {
   };
 
   const handleEdit = () => {
-    // TODO: Implémenter l'ouverture du dialogue d'édition de compte
-    console.log("Modifier le compte :", account.id);
-    toast.info("Fonctionnalité 'Modifier' à implémenter.");
+    openEditDialog(account);
   };
 
   return (

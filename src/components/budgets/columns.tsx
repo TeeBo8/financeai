@@ -125,9 +125,13 @@ export const columns: ColumnDef<any>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const budget = row.original;
       const utils = api.useUtils();
+      
+      // Récupérer la fonction d'édition à partir de meta
+      const meta = table.options.meta as { editBudget?: (budget: any) => void };
+      const handleEdit = meta?.editBudget;
 
       // Mutation pour supprimer un budget
       const deleteBudget = api.budget.delete.useMutation({
@@ -145,14 +149,15 @@ export const columns: ColumnDef<any>[] = [
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => window.dispatchEvent(new CustomEvent("edit-budget", { detail: budget.id }))}
+            onClick={() => handleEdit?.(budget)}
+            title="Modifier ce budget"
           >
             <Pencil className="h-4 w-4" />
           </Button>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" title="Supprimer ce budget">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </AlertDialogTrigger>

@@ -4,8 +4,8 @@ import { Button } from "~/components/ui/button";
 import { PlusCircle, ArrowRightLeft } from "lucide-react";
 import { useState } from "react";
 import { AccountsDataTable } from "~/components/accounts/accounts-data-table";
-import AddAccountDialog from "~/components/accounts/add-account-dialog";
 import TransferFundsDialog from "~/components/transfers/transfer-funds-dialog";
+import { useAccountDialogStore } from "~/stores/useAccountDialogStore";
 
 // Utilise le type retourné par la procédure tRPC
 import { type AppRouter } from '~/server/api/root';
@@ -18,21 +18,11 @@ interface AccountsPageClientProps {
 }
 
 export function AccountsPageClient({ accounts }: AccountsPageClientProps) {
-  // États pour gérer les dialogues
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<AccountWithBalance | null>(null);
+  // État pour gérer le dialogue de transfert
   const [isTransferFormOpen, setIsTransferFormOpen] = useState(false);
-
-  // Fonctions pour gérer les ouvertures/fermetures des dialogues
-  const handleOpenAddDialog = () => {
-    setEditingAccount(null);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsFormOpen(false);
-    setEditingAccount(null);
-  };
+  
+  // Utiliser le store pour gérer l'état du dialogue de compte
+  const { openCreateDialog } = useAccountDialogStore();
 
   const handleOpenTransferDialog = () => {
     setIsTransferFormOpen(true);
@@ -50,17 +40,12 @@ export function AccountsPageClient({ accounts }: AccountsPageClientProps) {
           <Button variant="outline" onClick={handleOpenTransferDialog}>
             <ArrowRightLeft className="mr-2 h-4 w-4" /> Effectuer un Transfert
           </Button>
-          <Button onClick={handleOpenAddDialog}>
+          <Button onClick={openCreateDialog}>
             <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un compte
           </Button>
         </div>
         
-        {/* Intégration des dialogues */}
-        <AddAccountDialog
-          isOpen={isFormOpen}
-          onClose={handleCloseDialog}
-          accountToEdit={editingAccount}
-        />
+        {/* Intégration du dialogue de transfert */}
         <TransferFundsDialog
           isOpen={isTransferFormOpen}
           onClose={handleCloseTransferDialog}
@@ -79,7 +64,7 @@ export function AccountsPageClient({ accounts }: AccountsPageClientProps) {
       ) : (
         <div className="mt-6 flex flex-col items-center justify-center rounded-md border border-dashed p-10 text-center">
           <p className="text-muted-foreground">Vous n&apos;avez pas encore ajouté de compte bancaire.</p>
-          <Button onClick={handleOpenAddDialog} className="mt-4">
+          <Button onClick={openCreateDialog} className="mt-4">
             <PlusCircle className="mr-2 h-4 w-4" /> Ajouter votre premier compte
           </Button>
         </div>

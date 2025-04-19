@@ -4,6 +4,8 @@ import { SessionProvider } from "next-auth/react";
 import { Toaster } from "~/components/ui/sonner";
 import { TRPCReactProvider } from "~/trpc/react";
 import { GlobalTransactionDialog } from "~/components/transactions/global-transaction-dialog";
+import { GlobalAccountDialog } from "~/components/accounts/global-account-dialog";
+import { GlobalCategoryDialog } from "~/components/categories/global-category-dialog";
 // BudgetDialog a été déplacé dans BudgetsClient
 
 export default function ClientLayout({
@@ -17,6 +19,8 @@ export default function ClientLayout({
         {children}
         <Toaster richColors closeButton position="top-right" />
         <GlobalTransactionDialog />
+        <GlobalAccountDialog />
+        <GlobalCategoryDialog />
         {/* BudgetDialog est maintenant géré directement dans BudgetsClient */}
       </SessionProvider>
     </TRPCReactProvider>

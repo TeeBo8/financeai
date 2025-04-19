@@ -9,15 +9,18 @@ import {
 import { db } from "~/server/db";
 import * as schema from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
+import { revalidatePath } from "next/cache";
 
 // Schéma pour la création/modification d'une catégorie
 const categoryInputSchemaBase = z.object({
     name: z.string().min(1, "Le nom de la catégorie est requis").max(50, "Le nom ne peut pas dépasser 50 caractères"),
-    icon: z.string().max(50, "L'icône est trop longue").optional().nullable(),
+    icon: z.string().max(50, "L'icône est trop longue").optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
     color: z.string()
            .regex(/^#[0-9A-Fa-f]{6}$/, "Format couleur invalide (ex: #FF5733)")
            .optional()
-           .nullable(),
+           .nullable()
+           .or(z.literal(''))
+           .transform(val => val === '' ? null : val),
 });
 
 export const categoryRouter = createTRPCRouter({
@@ -75,6 +78,9 @@ export const categoryRouter = createTRPCRouter({
                 .returning();
 
             console.log("Category created successfully:", newCategory[0]);
+            revalidatePath("/categories");
+            revalidatePath("/transactions");
+            
             return newCategory[0];
 
         } catch (error) {
@@ -142,6 +148,10 @@ export const categoryRouter = createTRPCRouter({
 
             const updatedCategory = updatedCategories[0];
             console.log(`Category ${updatedCategory?.id} successfully updated by user ${userId}.`);
+            
+            revalidatePath("/categories");
+            revalidatePath("/transactions");
+            
             return updatedCategory;
 
         } catch (error) {
@@ -179,6 +189,11 @@ export const categoryRouter = createTRPCRouter({
             }
 
             console.log(`Category ${deleteResult[0]?.deletedId} successfully deleted by user ${userId}.`);
+            
+            revalidatePath("/categories");
+            revalidatePath("/transactions");
+            revalidatePath("/reports");
+            
             return { success: true, deletedId: deleteResult[0]?.deletedId };
 
         } catch (error) {

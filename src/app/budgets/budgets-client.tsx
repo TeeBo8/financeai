@@ -16,26 +16,31 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { toast } from "sonner";
-import { columns } from "~/components/budgets/columns";
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
-import { DataTablePagination } from "~/components/ui/data-table-pagination";
-import { DataTableViewOptions } from "~/components/ui/data-table-view-options";
 import { BudgetDialog } from "~/components/budgets/budget-dialog";
+import { BudgetCardActions } from "~/components/budgets/budget-card-actions";
+import { Badge } from "~/components/ui/badge";
+import { Progress } from "~/components/ui/progress";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "~/components/ui/sheet";
+import {
+  SelectGroup,
+  SelectLabel,
+} from "~/components/ui/select";
+import { BudgetForm } from "~/components/budgets/budget-form";
 
 // Type pour un budget avec ses dépenses
 type BudgetWithSpending = inferRouterOutputs<AppRouter>["budget"]["getAll"][number];
@@ -108,6 +113,15 @@ export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClient
     return true;
   });
 
+  // Fonction utilitaire pour formater les montants en euros
+  const formatAmount = (amount: number | string | null | undefined) => {
+    if (amount === null || amount === undefined) {
+      return "N/A";
+    }
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(numAmount);
+  };
+
   // Gestionnaire de changement de filtre
   const handleFilterChange = <K extends keyof BudgetFilters>(
     key: K,
@@ -153,24 +167,6 @@ export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClient
     setIsDialogOpen(true);
   };
 
-  // Configuration de la table TanStack
-  const table = useReactTable({
-    data: filteredBudgets || [], // Assurer que data n'est jamais undefined
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-    // Passer handleEditBudget via la propriété meta pour les actions
-    meta: {
-      editBudget: handleEditBudget,
-    },
-  });
-
   // Affichage pendant le chargement initial (quand aucune donnée n'est disponible)
   if (isLoading && !budgets) {
     return (
@@ -197,127 +193,152 @@ export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClient
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h3 className="text-lg font-medium">Liste de tous vos budgets</h3>
-          <p className="text-sm text-muted-foreground">
-            Suivez vos dépenses et respectez vos objectifs budgétaires.
-          </p>
-        </div>
-        <Button onClick={handleNewBudget} className="flex items-center gap-2">
-          <PlusCircle className="h-4 w-4" />
-          <span>Nouveau Budget</span>
-        </Button>
-      </div>
-
-      {/* Zone des Filtres */}
-      <div className="flex flex-col gap-4 rounded-md border p-4 sm:flex-row sm:items-end">
-        {/* Période */}
-        <div className="space-y-1 sm:w-60">
-          <label className="text-sm font-medium">Période</label>
-          <Select
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Rechercher un budget..."
             value={filters.period}
-            onValueChange={(value) => handleFilterChange('period', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Toutes les périodes" />
+            onChange={(e) => handleFilterChange('period', e.target.value)}
+            className="w-full sm:w-[250px]"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filters.period} onValueChange={(value) => handleFilterChange('period', value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrer par période" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes les périodes</SelectItem>
-              <SelectItem value="MONTHLY">Mensuel</SelectItem>
-              <SelectItem value="YEARLY">Annuel</SelectItem>
+              <SelectGroup>
+                <SelectLabel>Période</SelectLabel>
+                <SelectItem value="all">Toutes les périodes</SelectItem>
+                <SelectItem value="MONTHLY">Mensuel</SelectItem>
+                <SelectItem value="YEARLY">Annuel</SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Utilisation du budget */}
-        <div className="space-y-1 sm:w-60">
-          <label className="text-sm font-medium">Utilisation</label>
-          <Select
-            value={filters.spentPercentage}
-            onValueChange={(value) => handleFilterChange('spentPercentage', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Toutes les utilisations" />
+          <Select value={filters.spentPercentage} onValueChange={(value) => handleFilterChange('spentPercentage', value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrer par dépenses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes les utilisations</SelectItem>
-              <SelectItem value="under50">Moins de 50%</SelectItem>
-              <SelectItem value="between50And75">Entre 50% et 75%</SelectItem>
-              <SelectItem value="between75And100">Entre 75% et 100%</SelectItem>
-              <SelectItem value="over100">Dépassé (plus de 100%)</SelectItem>
+              <SelectGroup>
+                <SelectLabel>Dépenses</SelectLabel>
+                <SelectItem value="all">Toutes les dépenses</SelectItem>
+                <SelectItem value="under50">Moins de 50%</SelectItem>
+                <SelectItem value="between50And75">Entre 50% et 75%</SelectItem>
+                <SelectItem value="between75And100">Entre 75% et 100%</SelectItem>
+                <SelectItem value="over100">Dépassé (plus de 100%)</SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Bouton Reset Filtres */}
-        <div className="flex justify-start">
-          <Button
-            variant="ghost"
-            onClick={resetFilters}
-            disabled={!hasActiveFilters || isFetching}
-            className="h-10"
-            aria-label="Réinitialiser les filtres"
-          >
-            <FilterX className="mr-2 h-4 w-4" /> Réinitialiser
-          </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button>Nouveau Budget</Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Créer un nouveau budget</SheetTitle>
+                <SheetDescription>
+                  Définissez un budget pour mieux gérer vos dépenses
+                </SheetDescription>
+              </SheetHeader>
+              <BudgetForm initialData={null} onClose={() => {
+                void utils.budget.getAll.invalidate();
+              }} />
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-center space-x-2">
-          {/* Placeholder pour d'éventuels autres contrôles de la table */}
-        </div>
-        <DataTableViewOptions table={table} />
-      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredBudgets.length > 0 ? (
+          filteredBudgets.map((budget) => {
+            const spentPercentage = (budget.spentAmount / budget.amount) * 100;
+            const isOverBudget = spentPercentage > 100;
 
-      {/* DataTable */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Aucun budget trouvé.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            return (
+              <Card key={budget.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold">{budget.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {budget.period === "MONTHLY"
+                          ? "Budget mensuel"
+                          : "Budget annuel"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        {formatAmount(budget.spentAmount)} /{" "}
+                        {formatAmount(budget.amount)}
+                      </p>
+                      <p
+                        className={`text-xs ${
+                          isOverBudget ? "text-destructive" : "text-muted-foreground"
+                        }`}
+                      >
+                        {isOverBudget
+                          ? `Dépassement de ${formatAmount(
+                              budget.spentAmount - budget.amount
+                            )}`
+                          : `Reste ${formatAmount(
+                              budget.amount - budget.spentAmount
+                            )}`}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-2">
+                  <Progress
+                    value={Math.min(spentPercentage, 100)}
+                    className={`h-2 ${
+                      isOverBudget ? "bg-destructive/20" : ""
+                    }`}
+                    indicatorClassName={isOverBudget ? "bg-destructive" : ""}
+                  />
+                  <p className="mt-1 text-xs text-right text-muted-foreground">
+                    {spentPercentage.toFixed(0)}%
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleEditBudget(budget)}>
+                    Voir les détails
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })
+        ) : (
+          <div className="col-span-full flex items-center justify-center rounded-lg border border-dashed p-8">
+            <div className="flex flex-col items-center text-center">
+              <h3 className="mt-4 text-lg font-semibold">
+                Aucun budget trouvé
+              </h3>
+              <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                Essayez de modifier vos filtres ou créez un nouveau budget.
+              </p>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button>Créer un budget</Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Créer un nouveau budget</SheetTitle>
+                    <SheetDescription>
+                      Définissez un budget pour mieux gérer vos dépenses
+                    </SheetDescription>
+                  </SheetHeader>
+                  <BudgetForm initialData={null} onClose={() => {
+                    void utils.budget.getAll.invalidate();
+                  }} />
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
+        )}
       </div>
-      
-      {/* Pagination */}
-      <DataTablePagination table={table} />
 
       {/* Indicateur de chargement pendant le refetch */}
       {isFetching && !isLoading && (
