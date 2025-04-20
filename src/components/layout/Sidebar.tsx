@@ -12,6 +12,7 @@ import {
   LogOut,
   Tag,
   Landmark,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { signOut } from "next-auth/react";
@@ -74,6 +75,11 @@ export function Sidebar() {
             href="/categories"
             icon={<Tag className="size-4" />}
             title="Catégories"
+          />
+          <NavItem
+            href="/recurring"
+            icon={<RefreshCw className="size-4" />}
+            title="Récurrentes"
           />
           <NavItem
             href="/reports"

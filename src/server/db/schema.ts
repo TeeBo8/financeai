@@ -8,6 +8,7 @@ import {
   timestamp,
   varchar,
   decimal,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
@@ -190,6 +191,33 @@ export const budgetsToCategories = pgTable("budgets_to_categories", {
   pk: primaryKey({ columns: [t.budgetId, t.categoryId] }),
 }));
 
+// --- Nouvelle Table: Recurring Transactions ---
+export const recurringTransactions = pgTable("recurring_transaction", {
+  id: text("id").primaryKey().$defaultFn(() => `rec_${crypto.randomUUID()}`),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  description: varchar("description", { length: 256 }).notNull(),
+  notes: text("notes"), // Notes optionnelles
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(), // Montant (peut être positif ou négatif)
+  frequency: varchar("frequency", { length: 50 }).notNull(), // Ex: 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'
+  interval: integer("interval").notNull().default(1), // Ex: 1 = tous les mois, 2 = tous les 2 mois
+  startDate: timestamp("start_date", { mode: "date" }).notNull(), // Date de début
+  endDate: timestamp("end_date", { mode: "date" }), // Date de fin (optionnelle)
+  nextOccurrenceDate: timestamp("next_occurrence_date", { mode: "date" }).notNull(), // Prochaine date d'exécution
+  bankAccountId: text("bankAccountId")
+    .notNull()
+    .references(() => bankAccounts.id, { onDelete: 'restrict' }), // Compte associé (RESTRICT pour éviter suppression compte si utilisé)
+  categoryId: text("categoryId")
+    .references(() => categories.id, { onDelete: 'set null' }), // Catégorie (optionnelle, SET NULL si catégorie supprimée)
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
+}, (table) => ({
+  userIdx: index("recurring_transaction_userId_idx").on(table.userId),
+  bankAccountIdx: index("recurring_transaction_bankAccountId_idx").on(table.bankAccountId),
+  nextOccurrenceDateIdx: index("recurring_transaction_nextOccurrenceDate_idx").on(table.nextOccurrenceDate),
+}));
+
 
 // --- RELATIONS ---
 
@@ -199,24 +227,23 @@ export const usersRelations = relations(users, ({ many }) => ({
   categories: many(categories),
   transactions: many(transactions),
   budgets: many(budgets),
-  bankAccounts: many(bankAccounts), // <<< RELATION AJOUTÉE >>> User -> BankAccounts
+  bankAccounts: many(bankAccounts),
+  recurringTransactions: many(recurringTransactions), // Nouvelle relation
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
   user: one(users, { fields: [categories.userId], references: [users.id] }),
   transactions: many(transactions),
   budgets: many(budgets),
-  budgetsToCategories: many(budgetsToCategories), // Nouvelle relation via table de jointure
+  budgetsToCategories: many(budgetsToCategories),
+  recurringTransactions: many(recurringTransactions), // Nouvelle relation
 }));
 
-// =============================================
-// <<< NOUVELLE RELATION : bankAccountsRelations >>>
-// =============================================
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
-  user: one(users, { fields: [bankAccounts.userId], references: [users.id] }), // BankAccount -> User
-  transactions: many(transactions), // BankAccount -> Transactions
+  user: one(users, { fields: [bankAccounts.userId], references: [users.id] }),
+  transactions: many(transactions),
+  recurringTransactions: many(recurringTransactions), // Nouvelle relation
 }));
-
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
@@ -244,4 +271,11 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
     user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
+
+// Nouvelle relation pour les transactions récurrentes
+export const recurringTransactionsRelations = relations(recurringTransactions, ({ one }) => ({
+  user: one(users, { fields: [recurringTransactions.userId], references: [users.id] }),
+  bankAccount: one(bankAccounts, { fields: [recurringTransactions.bankAccountId], references: [bankAccounts.id] }),
+  category: one(categories, { fields: [recurringTransactions.categoryId], references: [categories.id] }),
 }));

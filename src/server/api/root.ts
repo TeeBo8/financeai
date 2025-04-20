@@ -7,6 +7,7 @@ import { accountRouter } from "~/server/api/routers/account";
 import { reportRouter } from "~/server/api/routers/report";
 import { dashboardRouter } from "~/server/api/routers/dashboard";
 import { aiRouter } from "~/server/api/routers/ai";
+import { recurringTransactionRouter } from "~/server/api/routers/recurringTransaction";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   report: reportRouter,
   dashboard: dashboardRouter,
   ai: aiRouter,
+  recurringTransaction: recurringTransactionRouter,
 });
 
 // export type definition of API

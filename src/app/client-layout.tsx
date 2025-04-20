@@ -6,6 +6,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { GlobalTransactionDialog } from "~/components/transactions/global-transaction-dialog";
 import { GlobalAccountDialog } from "~/components/accounts/global-account-dialog";
 import { GlobalCategoryDialog } from "~/components/categories/global-category-dialog";
+import { GlobalRecurringTransactionDialog } from "~/components/recurring/global-recurring-transaction-dialog";
 // BudgetDialog a été déplacé dans BudgetsClient
 
 export default function ClientLayout({
@@ -21,6 +22,7 @@ export default function ClientLayout({
         <GlobalTransactionDialog />
         <GlobalAccountDialog />
         <GlobalCategoryDialog />
+        <GlobalRecurringTransactionDialog />
         {/* BudgetDialog est maintenant géré directement dans BudgetsClient */}
       </SessionProvider>
     </TRPCReactProvider>
