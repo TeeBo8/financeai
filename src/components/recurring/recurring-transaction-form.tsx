@@ -14,6 +14,7 @@ import { useRecurringTransactionDialogStore, defaultRecurringTransactionFormValu
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { z } from "zod";
+import { ComboboxField, type ComboboxOptionWithStyle } from "~/components/ui/combobox-rhf";
 
 // Helper pour formater les dates pour les inputs type="date"
 const formatDateForInput = (date: Date | string | null | undefined): string => {
@@ -253,39 +254,27 @@ export function RecurringTransactionForm() {
                     )}
                 />
 
-                {/* Compte Bancaire */}
+                {/* Compte Bancaire - Remplacé par ComboboxField */}
                 <FormField
                     control={form.control}
                     name="accountId"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Compte Bancaire</FormLabel>
-                            <Select
-                                value={field.value}
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    setSelectedAccountId(value);
-                                }}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sélectionner un compte" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {isLoadingAccounts ? (
-                                        <SelectItem value="loading" disabled>Chargement...</SelectItem>
-                                    ) : accounts?.length ? (
-                                        accounts.map((account) => (
-                                            <SelectItem key={account.id} value={account.id}>
-                                                {account.name}
-                                            </SelectItem>
-                                        ))
-                                    ) : (
-                                        <SelectItem value="empty" disabled>Aucun compte disponible</SelectItem>
-                                    )}
-                                </SelectContent>
-                            </Select>
+                            <ComboboxField
+                                control={form.control}
+                                name="accountId"
+                                label=""
+                                options={accounts?.map(acc => ({
+                                    value: acc.id,
+                                    label: acc.name,
+                                    icon: acc.icon,
+                                    color: acc.color,
+                                })) ?? []}
+                                placeholder="Sélectionner un compte..."
+                                searchPlaceholder="Rechercher un compte..."
+                                emptyText="Aucun compte trouvé."
+                            />
                             <FormMessage />
                         </FormItem>
                     )}

@@ -38,7 +38,7 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { ComboboxField, type ComboboxOption } from "~/components/ui/combobox-rhf";
+import { ComboboxField, type ComboboxOption, type ComboboxOptionWithStyle } from "~/components/ui/combobox-rhf";
 
 // Schéma de validation du formulaire
 const formSchema = z.object({
@@ -286,9 +286,11 @@ export function TransactionForm({
     : "Saisissez les détails de votre nouvelle transaction";
 
   // Prépare les options pour les Combobox
-  const accountOptions: ComboboxOption[] = bankAccounts?.map(acc => ({
+  const accountOptions: ComboboxOptionWithStyle[] = bankAccounts?.map(acc => ({
     value: acc.id,
     label: acc.name,
+    icon: acc.icon,
+    color: acc.color,
   })) ?? [];
 
   const categoryOptions: ComboboxOption[] = (categories ?? []).map(category => ({
