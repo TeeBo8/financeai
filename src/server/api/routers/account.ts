@@ -9,6 +9,8 @@ import { revalidatePath } from "next/cache";
 export const accountInputSchema = z.object({
   name: z.string().min(1, "Le nom du compte est requis."),
   // Nous retirons le champ 'type' car il n'existe pas dans la table bankAccounts
+  icon: z.string().optional(),
+  color: z.string().optional(),
 });
 
 export const accountRouter = createTRPCRouter({
@@ -40,6 +42,8 @@ export const accountRouter = createTRPCRouter({
         .values({
           name: input.name,
           userId: ctx.session.user.id,
+          icon: input.icon,
+          color: input.color,
           // Le solde initial est implicitement 0, géré par les transactions
         })
         .returning(); // Retourne le compte créé

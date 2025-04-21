@@ -122,6 +122,8 @@ export const bankAccounts = pgTable("bank_account", {
     .references(() => users.id, { onDelete: "cascade" }), // Lié à l'utilisateur
   name: varchar("name", { length: 256 }).notNull(), // Nom du compte (ex: Compte Courant LCL)
   // On pourrait ajouter : type (courant, épargne...), devise, solde initial/actuel plus tard
+  icon: text("icon"), // Emoji ou nom d'icône (optionnel)
+  color: varchar("color", { length: 7 }), // Code hexadécimal #RRGGBB (optionnel)
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
 }, (table) => ({

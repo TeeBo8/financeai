@@ -38,19 +38,18 @@ export function TransactionRowActions({ transaction }: TransactionRowActionsProp
   // --- Gestion du Dialogue de Modification (avec Zustand) ---
   const { openDialog: openEditDialog } = useTransactionDialogStore();
 
-  // Prépare les données pour le formulaire d'édition
-  const prepareTransactionData = (transaction: TransactionWithRelations): TransactionData => ({
-    id: transaction.id,
-    amount: typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : Number(transaction.amount),
-    description: transaction.description,
-    date: new Date(transaction.date),
-    categoryId: transaction.categoryId,
-    bankAccountId: transaction.bankAccountId,
-  });
-
   const handleEdit = () => {
-    // Ouvre le dialogue d'édition en passant la transaction initiale et en spécifiant showAddAndNew: false
-    openEditDialog(prepareTransactionData(transaction), { showAddAndNew: false });
+    console.log("Opening edit dialog for transaction:", transaction.id);
+    // Convertir amount en number si c'est une string
+    const transactionData: TransactionData = {
+      id: transaction.id,
+      amount: typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : Number(transaction.amount),
+      description: transaction.description,
+      date: new Date(transaction.date),
+      categoryId: transaction.categoryId,
+      bankAccountId: transaction.bankAccountId,
+    };
+    openEditDialog(transactionData, { showAddAndNew: false });
   };
   // --- Fin Gestion Dialogue Modification ---
 

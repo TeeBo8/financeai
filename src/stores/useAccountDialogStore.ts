@@ -15,6 +15,8 @@ export type AccountWithBalance = {
   userId: string;
   createdAt: Date;
   updatedAt: Date | null;
+  icon: string | null;
+  color: string | null;
 };
 
 // Type pour l'état du store
@@ -31,6 +33,8 @@ type AccountDialogState = {
 export const defaultAccountFormValues = {
     name: "",
     // type: undefined, // Pas de champ type pour l'instant
+    icon: "",
+    color: "#000000",
 };
 
 // Création du store Zustand
@@ -56,6 +60,8 @@ export const useAccountDialogStore = create<AccountDialogState>((set) => ({
       userId: account.userId,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
+      icon: account.icon,
+      color: account.color,
     };
     
     set({

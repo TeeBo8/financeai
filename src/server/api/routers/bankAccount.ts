@@ -6,15 +6,25 @@ import { bankAccounts, transactions } from "~/server/db/schema";
 import { and, eq, desc, sql, sum, getTableColumns } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
+// Regex simple pour valider un code couleur hexadécimal (# suivi de 3 ou 6 chiffres/lettres)
+const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
+
+// Schéma de base pour la validation
+const bankAccountInputSchema = z.object({
+  name: z.string().min(1, { message: "Le nom du compte est requis." }).max(256, { message: "Le nom du compte est trop long (max 256 caractères)." }),
+  // On pourrait ajouter ici: initialBalance, currency, type plus tard
+  icon: z.string().optional().or(z.literal('')).transform(val => val === '' ? null : val), // Optionnel, transforme "" en null
+  color: z.string()
+         .regex(hexColorRegex, { message: "Format couleur invalide (ex: #FFF)." })
+         .optional()
+         .or(z.literal('')) // Permet chaîne vide
+         .transform(val => val === '' ? null : val), // Transforme "" en null
+});
+
 export const bankAccountRouter = createTRPCRouter({
   // == CREATE ==
   create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1, { message: "Le nom du compte est requis." }).max(256, { message: "Le nom du compte est trop long (max 256 caractères)." }),
-        // On pourrait ajouter ici: initialBalance, currency, type plus tard
-      })
-    )
+    .input(bankAccountInputSchema)
     .mutation(async ({ ctx, input }) => {
       console.log("Creating bank account for user:", ctx.session.user.id, "with name:", input.name);
       try {
@@ -23,6 +33,8 @@ export const bankAccountRouter = createTRPCRouter({
           .values({
             userId: ctx.session.user.id,
             name: input.name,
+            icon: input.icon,
+            color: input.color,
             // updatedAt: new Date() // Drizzle gère ça avec $onUpdate
           })
           .returning(); // Retourne le compte créé
@@ -82,31 +94,64 @@ export const bankAccountRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().min(1), // ID du compte à mettre à jour
-        name: z.string().min(1, { message: "Le nom du compte est requis." }).max(256),
+        name: z.string().min(1, { message: "Le nom du compte est requis." }).max(256).optional(),
+        icon: bankAccountInputSchema.shape.icon.optional(),
+        color: bankAccountInputSchema.shape.color.optional(),
         // autres champs à mettre à jour plus tard
       })
     )
     .mutation(async ({ ctx, input }) => {
-      console.log("Updating bank account:", input.id, "for user:", ctx.session.user.id, "with new name:", input.name);
+      console.log("Updating bank account:", input.id, "for user:", ctx.session.user.id);
+      console.log("Input complet reçu:", input);
+      console.log("Champ icon:", input.icon, "Type:", typeof input.icon);
+      console.log("Champ color:", input.color, "Type:", typeof input.color);
+      
       try {
+        // Extraire l'id et filtrer les champs à mettre à jour
+        const { id, ...updateData } = input;
+        
+        // Filtrer les clés undefined pour n'envoyer que ce qui change
+        const filteredUpdateData = Object.fromEntries(
+            Object.entries(updateData).filter(([, value]) => value !== undefined)
+        );
+        
+        console.log("Données filtrées à enregistrer:", filteredUpdateData);
+        
+        // Si rien à mettre à jour, retourner le compte tel quel
+        if (Object.keys(filteredUpdateData).length === 0) {
+            const existingAccount = await ctx.db.query.bankAccounts.findFirst({ 
+                where: and(
+                    eq(bankAccounts.id, id),
+                    eq(bankAccounts.userId, ctx.session.user.id)
+                )
+            });
+            if (!existingAccount) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
+            }
+            return existingAccount;
+        }
+        
+        // Ajouter le timestamp de mise à jour
+        const updatedData = {
+            ...filteredUpdateData,
+            updatedAt: new Date()
+        };
+        
         const [updatedAccount] = await ctx.db
           .update(bankAccounts)
-          .set({
-            name: input.name,
-            updatedAt: new Date(), // Mettre à jour manuellement car $onUpdate ne marche que sur certains drivers/configs
-          })
+          .set(updatedData)
           .where(
             and(
-              eq(bankAccounts.id, input.id),
+              eq(bankAccounts.id, id),
               eq(bankAccounts.userId, ctx.session.user.id) // Sécurité: l'utilisateur ne peut modifier que ses propres comptes
             )
           )
           .returning();
 
         if (!updatedAccount) {
-            console.warn("Update attempt failed or account not found/not owned by user:", input.id);
+            console.warn("Update attempt failed or account not found/not owned by user:", id);
             // On vérifie si le compte existe mais n'appartient pas à l'user
-            const accountExists = await ctx.db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, input.id) });
+            const accountExists = await ctx.db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, id) });
             if (accountExists) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé à modifier ce compte.' });
             } else {
