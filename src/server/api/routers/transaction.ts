@@ -1,5 +1,5 @@
 import { z } from "zod"; // Utile pour valider les entrées plus tard
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm"; // Import des opérateurs Drizzle (equal, descending)
+import { eq, desc, and, gte, lte, sql, like, lt } from "drizzle-orm"; // Import des opérateurs Drizzle (equal, descending)
 import { revalidatePath } from "next/cache"; // Import de revalidatePath pour invalider le cache
 
 import {
@@ -43,6 +43,8 @@ export const transactionRouter = createTRPCRouter({
       dateTo: z.date().optional(),
       categoryId: z.string().optional(),
       bankAccountId: z.string().optional(),
+      description: z.string().optional(), // Ajout: pour la recherche textuelle (q)
+      type: z.enum(['all', 'income', 'expense']).optional().default('all'), // Ajout: type de transaction
     }).optional()) // Rendre l'objet input optionnel si aucun filtre n'est appliqué
     .query(async ({ ctx, input }) => {
       // ctx.session.user.id contient l'ID de l'utilisateur authentifié
@@ -51,6 +53,8 @@ export const transactionRouter = createTRPCRouter({
       console.log(`Fetching transactions for user: ${userId}`, "with filters:", input); // Pour le débogage
 
       const whereClauses = [eq(schema.transactions.userId, userId)];
+      
+      // Filtres existants
       if (input?.dateFrom) {
         whereClauses.push(gte(schema.transactions.date, input.dateFrom));
       }
@@ -70,6 +74,19 @@ export const transactionRouter = createTRPCRouter({
       }
       if (input?.bankAccountId && input.bankAccountId !== 'all') { // Vérifie aussi qu'on ne filtre pas pour "tous"
         whereClauses.push(eq(schema.transactions.bankAccountId, input.bankAccountId));
+      }
+      
+      // Nouveaux filtres
+      if (input?.description && input.description.trim() !== '') {
+        // Recherche textuelle (insensible à la casse)
+        whereClauses.push(like(schema.transactions.description, `%${input.description}%`));
+      }
+      
+      // Filtre par type (revenus/dépenses)
+      if (input?.type === 'income') {
+        whereClauses.push(gte(schema.transactions.amount, '0'));
+      } else if (input?.type === 'expense') {
+        whereClauses.push(lt(schema.transactions.amount, '0'));
       }
 
       try {
