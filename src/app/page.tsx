@@ -53,7 +53,7 @@ export default function Home() {
         <div className="relative mx-auto mt-8 sm:mt-10 w-full max-w-4xl">
           <Image
             src="/images/financeai-screenshot-reports.png"
-            alt="Capture d'écran de l'application FinanceAI"
+            alt="Capture d&apos;écran de l&apos;application FinanceAI"
             width={1200}
             height={750}
             quality={90}
@@ -104,7 +104,7 @@ export default function Home() {
               </div>
               <h3 className="mb-2 text-lg sm:text-xl font-semibold">Transferts Faciles</h3>
               <p className="text-sm sm:text-base text-muted-foreground">
-                Transférez de l'argent entre vos comptes en une seule
+                Transférez de l&apos;argent entre vos comptes en une seule
                 opération, vos soldes sont mis à jour automatiquement.
               </p>
             </div>
@@ -129,7 +129,7 @@ export default function Home() {
                 href={session ? "/dashboard" : "#"} 
                 onClick={!session ? () => signIn('google', { callbackUrl: '/dashboard' }) : undefined}
               >
-                {session ? `Retourner à l'App` : "Commencer gratuitement"}
+                {session ? `Retourner à l&apos;App` : "Commencer gratuitement"}
               </Link>
             </Button>
           </div>
