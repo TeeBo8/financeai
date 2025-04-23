@@ -4,19 +4,12 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { type AppRouter } from '~/server/api/root';
 import { type inferRouterOutputs } from '@trpc/server';
 import { DataTableColumnHeader } from "~/components/ui/data-table-column-header";
-import { formatCurrency, cn } from "~/lib/utils";
+import { formatCurrency, formatDate, cn } from "~/lib/utils";
 import { Badge } from "~/components/ui/badge";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 // Importer les actions de ligne
 import { RecurringTransactionRowActions } from "./recurring-transaction-row-actions";
 
 type RecurringTransactionWithRelations = inferRouterOutputs<AppRouter>['recurringTransaction']['getAll'][number];
-
-// Helper pour formater une date
-const formatDate = (date: Date | string): string => {
-  return format(new Date(date), "dd MMM yyyy", { locale: fr });
-};
 
 // Helper pour afficher la fréquence
 const formatFrequency = (freq: string, interval: number): string => {

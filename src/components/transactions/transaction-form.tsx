@@ -55,7 +55,10 @@ const formSchema = z.object({
     required_error: "Veuillez sélectionner une date",
   }),
   categoryId: z.string().optional(),
-  bankAccountId: z.string().min(1, "Veuillez sélectionner un compte bancaire"),
+  bankAccountId: z.string({
+    required_error: "Veuillez sélectionner un compte bancaire",
+    invalid_type_error: "Veuillez sélectionner un compte bancaire"
+  }).min(1, "Veuillez sélectionner un compte bancaire"),
 });
 
 // Type dérivé du schéma

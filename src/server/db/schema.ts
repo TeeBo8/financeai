@@ -10,7 +10,8 @@ import {
   decimal,
   boolean,
 } from "drizzle-orm/pg-core";
-import { type AdapterAccount } from "next-auth/adapters";
+// Commenté pour éviter l'erreur dans les tests de Vitest
+// import { type AdapterAccount } from "next-auth/adapters";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -50,7 +51,8 @@ export const accounts = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     type: varchar("type", { length: 255 })
-      .$type<AdapterAccount["type"]>()
+      // Remplacé la référence de type AdapterAccount par une chaîne littérale
+      .$type<string>()
       .notNull(),
     provider: varchar("provider", { length: 255 }).notNull(),
     providerAccountId: varchar("providerAccountId", { length: 255 }).notNull(),

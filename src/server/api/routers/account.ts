@@ -13,6 +13,12 @@ export const accountInputSchema = z.object({
   color: z.string().optional(),
 });
 
+// Schéma pour l'update (exporté pour les tests)
+export const accountUpdateInputSchema = accountInputSchema.extend({
+  id: z.string().min(1, "ID de compte requis."),
+  name: accountInputSchema.shape.name.optional(),
+});
+
 export const accountRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
       const userAccounts = await ctx.db
@@ -64,13 +70,7 @@ export const accountRouter = createTRPCRouter({
 
   // --- MUTATION UPDATE ---
   update: protectedProcedure
-    .input(
-      // Pour l'update, on ajoute l'ID et on rend les autres champs optionnels
-      accountInputSchema.extend({
-        id: z.string().min(1, "ID de compte requis."), // Accepte n'importe quel format d'ID non vide
-        name: accountInputSchema.shape.name.optional(), // Optional pour update
-      })
-    )
+    .input(accountUpdateInputSchema)
     .mutation(async ({ ctx, input }) => {
       const { id, ...updateData } = input;
 
