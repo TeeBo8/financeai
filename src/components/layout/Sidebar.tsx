@@ -13,24 +13,26 @@ import {
   Tag,
   Landmark,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "./theme-toggle";
+import { SheetClose } from "~/components/ui/sheet";
 
 interface NavItemProps {
   href: string;
   icon: React.ReactNode;
   title: string;
+  closeOnClick?: boolean;
 }
 
-const NavItem = ({ href, icon, title }: NavItemProps) => {
+const NavItem = ({ href, icon, title, closeOnClick }: NavItemProps) => {
   const pathname = usePathname();
   const isActive = pathname === href;
 
-  return (
-    <Link
-      href={href}
+  const content = (
+    <div
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
         isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
@@ -38,11 +40,23 @@ const NavItem = ({ href, icon, title }: NavItemProps) => {
     >
       {icon}
       <span>{title}</span>
-    </Link>
+    </div>
   );
+
+  if (closeOnClick) {
+    return (
+      <SheetClose asChild>
+        <Link href={href}>{content}</Link>
+      </SheetClose>
+    );
+  }
+
+  return <Link href={href}>{content}</Link>;
 };
 
 export function Sidebar() {
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
     <div className="flex h-full w-full flex-col bg-card py-4">
       <div className="px-4 py-2">
@@ -55,41 +69,49 @@ export function Sidebar() {
             href="/dashboard"
             icon={<LayoutDashboard className="size-4" />}
             title="Tableau de bord"
+            closeOnClick={isMobile}
           />
           <NavItem
             href="/transactions"
             icon={<Receipt className="size-4" />}
             title="Transactions"
+            closeOnClick={isMobile}
           />
           <NavItem
             href="/accounts"
             icon={<Landmark className="size-4" />}
             title="Comptes"
+            closeOnClick={isMobile}
           />
           <NavItem
             href="/budgets"
             icon={<PiggyBank className="size-4" />}
             title="Budgets"
+            closeOnClick={isMobile}
           />
           <NavItem
             href="/categories"
             icon={<Tag className="size-4" />}
             title="Catégories"
+            closeOnClick={isMobile}
           />
           <NavItem
             href="/recurring"
             icon={<RefreshCw className="size-4" />}
             title="Récurrentes"
+            closeOnClick={isMobile}
           />
           <NavItem
             href="/reports"
             icon={<BarChart3 className="size-4" />}
             title="Rapports"
+            closeOnClick={isMobile}
           />
           <NavItem
             href="/settings"
             icon={<Settings className="size-4" />}
             title="Paramètres"
+            closeOnClick={isMobile}
           />
         </nav>
       </div>
