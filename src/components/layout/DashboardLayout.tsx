@@ -22,7 +22,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex h-screen w-full">
       {/* Sidebar Desktop */}
       <div className="hidden w-64 shrink-0 border-r md:block h-full">
-        <Sidebar />
+        <Sidebar isMobile={false} />
       </div>
       
       {/* Main Content */}
@@ -37,7 +37,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <Sidebar />
+              <Sidebar isMobile={true} />
             </SheetContent>
           </Sheet>
           <div className="flex-1">

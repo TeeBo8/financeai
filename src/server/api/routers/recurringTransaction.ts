@@ -5,6 +5,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { revalidatePath } from "next/cache";
 import { add, parseISO } from 'date-fns'; // Pour calculer les dates
+import { type RecurringTransactionWithRelations } from "~/lib/types";
 
 // Helper pour calculer la prochaine date d'occurrence
 function calculateNextOccurrence(startDate: Date, frequency: string, interval: number): Date {
@@ -56,15 +57,21 @@ export const recurringTransactionInputSchema = z.object({
 
 export const recurringTransactionRouter = createTRPCRouter({
   // --- GET ALL ---
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.recurringTransactions.findMany({
+  getAll: protectedProcedure.query(async ({ ctx }): Promise<RecurringTransactionWithRelations[]> => {
+    const results = await ctx.db.query.recurringTransactions.findMany({
       where: eq(recurringTransactions.userId, ctx.session.user.id),
-      orderBy: [desc(recurringTransactions.nextOccurrenceDate)], // Trier par prochaine occurrence ? Ou nom ?
-      with: { // Inclure les noms pour l'affichage
+      orderBy: [desc(recurringTransactions.nextOccurrenceDate)],
+      with: {
           bankAccount: { columns: { name: true } },
-          category: { columns: { name: true } },
+          category: { columns: { name: true, color: true, icon: true } },
       }
     });
+
+    // Convertir la fréquence en type correct
+    return results.map(result => ({
+      ...result,
+      frequency: result.frequency as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
+    }));
   }),
 
   // --- CREATE ---

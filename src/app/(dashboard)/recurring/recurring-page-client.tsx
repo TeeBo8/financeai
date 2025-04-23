@@ -8,10 +8,7 @@ import { useRecurringTransactionDialogStore } from "~/stores/useRecurringTransac
 import { columns } from "~/components/recurring/columns";
 import { RecurringTransactionsDataTable } from "~/components/recurring/recurring-transactions-data-table";
 // Importer le type de données
-import { type AppRouter } from '~/server/api/root';
-import { type inferRouterOutputs } from '@trpc/server';
-
-type RecurringTransactionWithRelations = inferRouterOutputs<AppRouter>['recurringTransaction']['getAll'][number];
+import { type RecurringTransactionWithRelations } from "~/lib/types";
 
 interface RecurringPageClientProps {
   recurringModels: RecurringTransactionWithRelations[];
@@ -36,7 +33,7 @@ export default function RecurringPageClient({ recurringModels }: RecurringPageCl
       </div>
 
       {/* Intégration du DataTable */}
-      <RecurringTransactionsDataTable data={recurringModels} columns={columns} />
+      <RecurringTransactionsDataTable data={recurringModels} />
     </>
   );
 } 

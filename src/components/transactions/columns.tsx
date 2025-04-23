@@ -76,7 +76,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
              borderColor: category.color ?? undefined,
              // backgroundColor: // ou background si tu préfères
              color: category.color ?? undefined, // Met aussi le texte en couleur
-             }}>
+             }} className="hidden md:inline-flex">
            {category.icon && <span className="mr-1">{category.icon}</span>}
           {category.name}
         </Badge>
@@ -108,7 +108,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
      ),
      cell: ({ row }) => {
         const account = row.original.bankAccount;
-        return <div>{account?.name ?? "N/A"}</div>; // Affiche le nom du compte
+        return <div className="hidden md:table-cell">{account?.name ?? "N/A"}</div>; // Affiche le nom du compte
      },
      filterFn: (row, id, value) => {
        const accountName = row.original.bankAccount?.name;

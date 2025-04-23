@@ -8,6 +8,8 @@ import { formatCurrency, formatDate, cn } from "~/lib/utils";
 import { Badge } from "~/components/ui/badge";
 // Importer les actions de ligne
 import { RecurringTransactionRowActions } from "./recurring-transaction-row-actions";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 type RecurringTransactionWithRelations = inferRouterOutputs<AppRouter>['recurringTransaction']['getAll'][number];
 
@@ -27,86 +29,144 @@ const formatFrequency = (freq: string, interval: number): string => {
 export const columns: ColumnDef<RecurringTransactionWithRelations>[] = [
   {
     accessorKey: "description",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
-    cell: ({ row }) => <div className="font-medium">{row.getValue("description")}</div>,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Description" />
+    ),
+    cell: ({ row }) => (
+      <div className="font-medium truncate max-w-[140px] sm:max-w-none">
+        {row.getValue("description")}
+      </div>
+    ),
+    enableSorting: true,
   },
   {
     accessorKey: "amount",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Montant" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Montant" />
+    ),
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
-      const isIncome = amount >= 0;
-      return (
-        <span className={cn(
-          isIncome ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"
-        )}>
-          {formatCurrency(amount)}
-        </span>
-      );
+      const amountValue = row.getValue("amount");
+      const amount = typeof amountValue === 'string' ? parseFloat(amountValue) : amountValue as number;
+      const formatted = formatCurrency(amount);
+      const textColor = amount < 0 ? "text-destructive" : "text-green-600 dark:text-green-400";
+
+      return <div className={`text-right font-medium ${textColor}`}>{formatted}</div>;
     },
+    sortingFn: "alphanumeric",
+    enableSorting: true,
   },
-   {
-    id: "frequency", // Colonne calculée
-    header: "Fréquence",
+  {
+    accessorKey: "frequency",
+    header: ({ column }) => (
+      <div className="hidden sm:table-cell">
+        <DataTableColumnHeader column={column} title="Fréquence" />
+      </div>
+    ),
     cell: ({ row }) => {
-        const frequency = row.original.frequency;
-        const interval = row.original.interval;
-        return <div>{formatFrequency(frequency, interval)}</div>;
+      const frequency = row.getValue("frequency");
+      const interval = row.original.interval;
+      return <div className="hidden sm:table-cell">{formatFrequency(frequency as string, interval)}</div>;
     },
-    enableSorting: false,
-   },
-   {
-    accessorKey: "nextOccurrenceDate",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Prochaine Occurrence" />,
+    enableSorting: true,
+  },
+  {
+    accessorKey: "accountOrCategory",
+    header: ({ column }) => (
+      <div className="hidden sm:table-cell">
+        <DataTableColumnHeader column={column} title="Compte/Catégorie" />
+      </div>
+    ),
     cell: ({ row }) => {
-        const date = row.getValue("nextOccurrenceDate") as Date | string | null;
-        return <div>{date ? formatDate(date) : "-"}</div>;
-    },
-   },
-  { // Colonne combinée pour Compte & Catégorie pour économiser de l'espace ?
-    id: "account_category",
-    header: "Compte / Catégorie",
-    cell: ({ row }) => {
-      const accountName = row.original.bankAccount?.name ?? "N/A";
-      const categoryName = row.original.category?.name;
+      const account = row.original.bankAccount;
+      const category = row.original.category;
       
-      // On évite de référencer une propriété 'color' qui pourrait ne pas exister
+      if (account) {
+        return <div className="hidden sm:table-cell">{account.name}</div>;
+      } else if (category) {
+        return (
+          <div className="hidden sm:table-cell">
+            <Badge variant="outline" style={{
+              borderColor: category.color ?? undefined,
+              color: category.color ?? undefined,
+            }}>
+              {category.icon && <span className="mr-1">{category.icon}</span>}
+              {category.name}
+            </Badge>
+          </div>
+        );
+      }
+      return <div className="hidden sm:table-cell">N/A</div>;
+    },
+    enableSorting: true,
+  },
+  {
+    accessorKey: "nextOccurrenceDate",
+    header: ({ column }) => (
+      <div className="hidden md:table-cell">
+        <DataTableColumnHeader column={column} title="Prochaine occurrence" />
+      </div>
+    ),
+    cell: ({ row }) => {
+      const date = row.getValue("nextOccurrenceDate");
       return (
-        <div className="flex flex-col">
-          <span>{accountName}</span>
-          {categoryName && (
-            <Badge
-                variant="outline"
-                className="mt-1 w-fit" // w-fit pour adapter la largeur
-             >
-                {categoryName}
-             </Badge>
-          )}
+        <div className="hidden md:table-cell">
+          {format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}
         </div>
       );
     },
-    enableSorting: false,
+    enableSorting: true,
   },
-  // Ou colonnes séparées si tu préfères
-  // { accessorKey: "account.name", header: "Compte" },
-  // { accessorKey: "category.name", header: "Catégorie" },
-   {
+  {
     accessorKey: "endDate",
-    header: "Date de Fin",
+    header: ({ column }) => (
+      <div className="hidden lg:table-cell">
+        <DataTableColumnHeader column={column} title="Date de fin" />
+      </div>
+    ),
     cell: ({ row }) => {
-        const date = row.getValue("endDate") as Date | string | null;
-        return <div>{date ? formatDate(date) : "Aucune"}</div>;
+      const date = row.getValue("endDate");
+      if (!date) return <div className="hidden lg:table-cell">-</div>;
+      return (
+        <div className="hidden lg:table-cell">
+          {format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}
+        </div>
+      );
     },
-    enableHiding: true, // Peut être masquée
-   },
+    enableSorting: true,
+  },
+  {
+    accessorKey: "notes",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Notes" />,
+    cell: ({ row }) => {
+      const notes = row.getValue("notes");
+      return <div className="hidden md:table-cell">{notes as string || "-"}</div>;
+    },
+    enableSorting: true,
+  },
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Créé le" />,
+    cell: ({ row }) => {
+      const date = row.getValue("createdAt");
+      return <div className="hidden md:table-cell">{format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}</div>;
+    },
+    enableSorting: true,
+  },
+  {
+    accessorKey: "updatedAt",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Modifié le" />,
+    cell: ({ row }) => {
+      const date = row.getValue("updatedAt");
+      if (!date) return <div className="hidden md:table-cell">-</div>;
+      return <div className="hidden md:table-cell">{format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}</div>;
+    },
+    enableSorting: true,
+  },
   {
     id: "actions",
     cell: ({ row }) => {
-      return (
-        <div className="text-right">
-          <RecurringTransactionRowActions recurring={row.original} />
-        </div>
-      );
+      const recurringTransaction = row.original;
+      return <RecurringTransactionRowActions recurring={recurringTransaction} />;
     },
     enableSorting: false,
     enableHiding: false,

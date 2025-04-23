@@ -20,4 +20,30 @@ export type TransactionWithRelations = {
     id?: string;
     name: string;
   };
+};
+
+// Type pour les transactions récurrentes avec leurs relations
+export type RecurringTransactionWithRelations = {
+  id: string;
+  userId: string;
+  description: string;
+  notes: string | null;
+  amount: string;
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  interval: number;
+  startDate: Date;
+  endDate: Date | null;
+  nextOccurrenceDate: Date;
+  bankAccountId: string;
+  categoryId: string | null;
+  createdAt: Date;
+  updatedAt: Date | null;
+  bankAccount: {
+    name: string;
+  };
+  category: {
+    name: string;
+    icon: string | null;
+    color: string | null;
+  } | null;
 }; 
