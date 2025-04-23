@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { type InferSelectModel } from 'drizzle-orm'; 
-import { type categories } from '~/server/db/schema'; // Import des tables du schéma
+import { type InferSelectModel, and, eq } from 'drizzle-orm'; 
+import { categories } from '~/server/db/schema'; // Import des tables du schéma
+import { pgTable, text, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { mockDeep } from 'vitest-mock-extended';
+import { type Session } from 'next-auth';
+import { 
+  mockCategoryUpdate,
+  mockCategoryUpdateSet,
+  mockCategoryUpdateWhere,
+  mockCategoryUpdateReturning 
+} from './__mocks__/category.mocks';
+import { appRouter } from '~/server/api/root';
+import { createCallerFactory } from '~/server/api/trpc';
+import { type categoryRouter } from '~/server/api/routers/category';
 
 // --- Mock des Variables d'Environnement ---
 vi.mock('~/env.js', () => ({
@@ -39,29 +51,82 @@ vi.mock('next/cache', () => ({
   }),
 }));
 
-// Définir le type Category à partir du schéma Drizzle
+// Définir le type Category basé sur le schéma
 type Category = InferSelectModel<typeof categories>;
 
 // --- Mock de la Base de Données (Drizzle) ---
 // Déplacer les mock functions à l'intérieur de la factory vi.mock
 vi.mock('~/server/db', () => {
-  // Définir les fonctions mock à l'intérieur de la factory
+  // --- Mocks pour l'opération CREATE ---
+  // Simule la chaîne d'appels db.insert().values().returning()
   const mockCategoryInsertReturning = vi.fn();
   const mockValues = vi.fn().mockReturnValue({ returning: mockCategoryInsertReturning });
   const mockCategoryInsert = vi.fn().mockReturnValue({ values: mockValues });
-  const mockFindFirst = vi.fn().mockResolvedValue(null); // Retourne null par défaut pour simuler qu'aucune catégorie n'existe
+  const mockFindFirst = vi.fn().mockResolvedValue(null);
   
+  // --- Mocks pour l'opération UPDATE ---
+  // Simule la chaîne d'appels db.update().set().where().returning()
+  const mockCategoryUpdateReturning = vi.fn().mockImplementation(() => {
+    return {
+      id: 'test-category-id',
+      userId: 'user_test_123',
+      name: 'Updated Category',
+      icon: '🎯',
+      color: '#00ff00',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  });
+
+  const mockCategoryUpdateWhere = vi.fn().mockImplementation(() => ({
+    returning: mockCategoryUpdateReturning,
+  }));
+
+  const mockCategoryUpdateSet = vi.fn().mockImplementation(() => ({
+    where: mockCategoryUpdateWhere,
+  }));
+
+  const mockCategoryUpdate = vi.fn().mockImplementation((table) => {
+    if (table === categories) {
+      return {
+        set: mockCategoryUpdateSet,
+      };
+    }
+    return {};
+  });
+  
+  // --- Mocks pour l'opération DELETE ---
+  // Simule la chaîne d'appels db.delete().where().returning()
+  const mockCategoryDeleteReturning = vi.fn();
+  const mockCategoryDeleteWhere = vi.fn(() => ({ returning: mockCategoryDeleteReturning }));
+  const mockCategoryDelete = vi.fn(() => ({ where: mockCategoryDeleteWhere }));
+  
+  // --- Mock pour l'opération READ (findMany) ---
+  // Simule db.query.categories.findMany()
+  const mockCategoryFindMany = vi.fn();
+  
+  // Export des mocks pour les tests
+  const mocks = {
+    categoryUpdate: mockCategoryUpdate,
+    categoryUpdateSet: mockCategoryUpdateSet,
+    categoryUpdateWhere: mockCategoryUpdateWhere,
+    categoryUpdateReturning: mockCategoryUpdateReturning,
+  };
+
   // Retourner un objet avec db et les mocks exportés
   return {
     db: {
       insert: mockCategoryInsert,
+      update: mocks.categoryUpdate,
+      delete: mockCategoryDelete,
       query: {
         categories: {
-          findFirst: mockFindFirst
+          findFirst: mockFindFirst,
+          findMany: mockCategoryFindMany
         }
       },
       schema: {
-        categories: {}, // Table factice
+        categories,
       }
     },
     // Exporter les mocks pour pouvoir les utiliser dans les tests
@@ -69,6 +134,13 @@ vi.mock('~/server/db', () => {
     mockCategoryInsert_EXPORTED: mockCategoryInsert,
     mockValues_EXPORTED: mockValues,
     mockFindFirst_EXPORTED: mockFindFirst,
+    mockCategoryUpdateReturning_EXPORTED: mockCategoryUpdateReturning,
+    mockCategoryUpdateSet_EXPORTED: mockCategoryUpdateSet,
+    mockCategoryUpdateWhere_EXPORTED: mockCategoryUpdateWhere,
+    mockCategoryDeleteReturning_EXPORTED: mockCategoryDeleteReturning,
+    mockCategoryDeleteWhere_EXPORTED: mockCategoryDeleteWhere,
+    mockCategoryDelete_EXPORTED: mockCategoryDelete,
+    mockCategoryFindMany_EXPORTED: mockCategoryFindMany,
   };
 });
 
@@ -97,11 +169,6 @@ beforeEach(() => {
   vi.clearAllMocks(); // Réinitialise les compteurs d'appels etc.
 });
 
-// --- Importer les mocks exportés du module mocké ---
-import { appRouter } from '~/server/api/root'; // Importe ton routeur principal
-import { createCallerFactory } from '~/server/api/trpc'; // Importe le factory
-import { type categoryRouter } from '~/server/api/routers/category'; // Importe le type du routeur spécifique
-
 // Récupérer les mocks exportés
 const dbModule = await vi.importMock<any>('~/server/db');
 const mockDb = dbModule.db;
@@ -109,6 +176,13 @@ const mockCategoryInsertReturning_EXPORTED = dbModule.mockCategoryInsertReturnin
 const mockCategoryInsert_EXPORTED = dbModule.mockCategoryInsert_EXPORTED;
 const mockValues_EXPORTED = dbModule.mockValues_EXPORTED;
 const mockFindFirst_EXPORTED = dbModule.mockFindFirst_EXPORTED;
+const mockCategoryUpdateReturning_EXPORTED = dbModule.mockCategoryUpdateReturning_EXPORTED;
+const mockCategoryUpdateSet_EXPORTED = dbModule.mockCategoryUpdateSet_EXPORTED;
+const mockCategoryUpdateWhere_EXPORTED = dbModule.mockCategoryUpdateWhere_EXPORTED;
+const mockCategoryDeleteReturning_EXPORTED = dbModule.mockCategoryDeleteReturning_EXPORTED;
+const mockCategoryDeleteWhere_EXPORTED = dbModule.mockCategoryDeleteWhere_EXPORTED;
+const mockCategoryDelete_EXPORTED = dbModule.mockCategoryDelete_EXPORTED;
+const mockCategoryFindMany_EXPORTED = dbModule.mockCategoryFindMany_EXPORTED;
 
 // Crée un caller pour appeler les procédures tRPC dans les tests
 const createCaller = createCallerFactory(appRouter);
@@ -128,54 +202,54 @@ describe('Category Router', () => {
 
   describe('create procedure', () => {
     it('should create a new category successfully', async () => {
-      // 1. Arrange
+      // 1. Arrange : Prépare les données d'entrée et configure les mocks
       const inputData = {
         name: 'Nouvelle Catégorie',
         icon: '🚀',
         color: '#aabbcc',
       };
+      // Ajoute l'userId aux données attendues par la DB
       const expectedDbInput = {
         ...inputData,
-        userId: mockUserId, // Doit inclure l'userId de la session mockée
+        userId: mockUserId,
       };
-      const mockReturnedCategory: Category = { // Crée une catégorie factice retournée par la DB
+      // Simule la réponse de la DB avec un ID et des timestamps
+      const mockReturnedCategory: Category = {
         id: 'cat_test_789',
         ...expectedDbInput,
         createdAt: new Date(),
         updatedAt: null,
       };
 
-      // Configure le mock de la DB pour retourner la catégorie factice
-      mockCategoryInsertReturning_EXPORTED.mockResolvedValueOnce([mockReturnedCategory]); // .returning() retourne un tableau
+      // Configure le mock pour simuler l'insertion en DB
+      mockCategoryInsertReturning_EXPORTED.mockResolvedValueOnce([mockReturnedCategory]);
 
-      // 2. Act
+      // 2. Act : Exécute la procédure create
       const result = await caller.category.create(inputData);
 
-      // 3. Assert
-      // Vérifie que db.insert(...).values(...).returning() a été appelé avec les bonnes données
+      // 3. Assert : Vérifie que la DB a été appelée correctement
       expect(mockCategoryInsert_EXPORTED).toHaveBeenCalledOnce();
       expect(mockValues_EXPORTED).toHaveBeenCalledWith(expectedDbInput);
       expect(mockCategoryInsertReturning_EXPORTED).toHaveBeenCalledOnce();
-
-      // Vérifie que le résultat retourné par la procédure est correct
       expect(result).toEqual(mockReturnedCategory);
     });
 
     it('should use default icon and color if not provided', async () => {
-      // 1. Arrange
-      const inputData = { name: 'Catégorie Simple' }; // Sans icon/color
+      // 1. Arrange : Test avec seulement le nom obligatoire
+      const inputData = { name: 'Catégorie Simple' };
       const expectedDbInput = {
         name: 'Catégorie Simple',
         userId: mockUserId,
         icon: undefined,
         color: undefined,
       };
+      // Simule la réponse de la DB avec des valeurs par défaut
       const mockReturnedCategory: Category = {
         id: 'cat_test_999',
         name: 'Catégorie Simple',
         userId: mockUserId,
-        icon: '💡', // Valeur par défaut de la DB
-        color: '#ffffff', // Valeur par défaut de la DB
+        icon: '💡',
+        color: '#ffffff',
         createdAt: new Date(),
         updatedAt: null,
       };
@@ -184,7 +258,7 @@ describe('Category Router', () => {
       // 2. Act
       const result = await caller.category.create(inputData);
 
-      // 3. Assert
+      // 3. Assert : Vérifie que la DB utilise bien les valeurs par défaut
       expect(mockCategoryInsert_EXPORTED).toHaveBeenCalledOnce();
       expect(mockValues_EXPORTED).toHaveBeenCalledWith(expectedDbInput);
       expect(result).toEqual(mockReturnedCategory);
@@ -203,6 +277,184 @@ describe('Category Router', () => {
 
   }); // Fin describe 'create procedure'
 
-  // --- Ajoute des describe pour 'update', 'delete', 'list' ici plus tard ---
+  describe('update procedure', () => {
+    it('should update an existing category', async () => {
+      // 1. Arrange : Configure le mock pour simuler une mise à jour réussie
+      mockCategoryUpdateReturning_EXPORTED.mockResolvedValueOnce([{
+        id: 'test-category-id',
+        userId: 'user_test_123',
+        name: 'Updated Category',
+        icon: '🎯',
+        color: '#00ff00',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }]);
+
+      // 2. Act : Exécute la procédure update avec tous les champs
+      const result = await caller.category.update({
+        id: 'test-category-id',
+        name: 'Updated Category',
+        icon: '🎯',
+        color: '#00ff00',
+      });
+
+      // 3. Assert : Vérifie la chaîne d'appels update().set().where()
+      expect(mockCategoryUpdateSet_EXPORTED).toHaveBeenCalledWith({
+        name: 'Updated Category',
+        icon: '🎯',
+        color: '#00ff00',
+        updatedAt: expect.any(Date),
+      });
+
+      // Vérifie que la clause WHERE inclut l'ID et l'userId pour la sécurité
+      expect(mockCategoryUpdateWhere_EXPORTED).toHaveBeenCalledWith(
+        and(
+          eq(categories.id, 'test-category-id'),
+          eq(categories.userId, 'user_test_123')
+        )
+      );
+
+      expect(result).toEqual({
+        id: 'test-category-id',
+        userId: 'user_test_123',
+        name: 'Updated Category',
+        icon: '🎯',
+        color: '#00ff00',
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      });
+    });
+
+    it('should update only provided fields', async () => {
+      // 1. Arrange : Configure le mock pour une mise à jour partielle
+      mockCategoryUpdateReturning_EXPORTED.mockResolvedValueOnce([{
+        id: 'test-category-id',
+        userId: 'user_test_123',
+        name: 'Updated Name Only',
+        icon: '🎯',
+        color: '#00ff00',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }]);
+
+      // 2. Act : Mise à jour avec seulement le nom
+      await caller.category.update({
+        id: 'test-category-id',
+        name: 'Updated Name Only',
+      });
+
+      // 3. Assert : Vérifie que seuls les champs fournis sont mis à jour
+      expect(mockCategoryUpdateSet_EXPORTED).toHaveBeenCalledWith({
+        name: 'Updated Name Only',
+        updatedAt: expect.any(Date),
+      });
+    });
+
+    it('should throw an error if category is not found or not owned by user', async () => {
+      // 1. Arrange : Simule une catégorie non trouvée
+      mockCategoryUpdateReturning_EXPORTED.mockResolvedValueOnce([]);
+
+      // 2. Act & Assert : Vérifie que l'erreur est levée
+      await expect(
+        caller.category.update({
+          id: 'non-existent-id',
+          name: 'Test',
+        })
+      ).rejects.toThrow('Catégorie non trouvée ou non modifiable.');
+    });
+
+  }); // Fin describe 'update procedure'
+
+  describe('delete procedure', () => {
+    it('should delete an existing category successfully', async () => {
+      // 1. Arrange : Configure le mock pour simuler une suppression réussie
+      const categoryIdToDelete = 'cat_to_delete_123';
+      const inputData = { id: categoryIdToDelete };
+      const mockReturnedDeletedCategory = {
+        deletedId: categoryIdToDelete
+      };
+
+      mockCategoryDeleteReturning_EXPORTED.mockResolvedValueOnce([mockReturnedDeletedCategory]);
+
+      // 2. Act : Exécute la procédure delete
+      const result = await caller.category.delete(inputData);
+
+      // 3. Assert : Vérifie la chaîne d'appels delete().where()
+      expect(mockCategoryDelete_EXPORTED).toHaveBeenCalledWith(expect.anything());
+      expect(mockCategoryDeleteWhere_EXPORTED).toHaveBeenCalledWith(
+        and(
+          eq(categories.id, categoryIdToDelete),
+          eq(categories.userId, mockUserId)
+        )
+      );
+      expect(mockCategoryDeleteReturning_EXPORTED).toHaveBeenCalledOnce();
+      expect(result).toEqual({
+        success: true,
+        deletedId: categoryIdToDelete
+      });
+    });
+
+    it('should throw an error if category to delete is not found or not owned', async () => {
+      // 1. Arrange : Simule une catégorie non trouvée
+      mockCategoryDeleteReturning_EXPORTED.mockResolvedValueOnce([]);
+
+      // 2. Act & Assert : Vérifie que l'erreur est levée
+      await expect(caller.category.delete({ id: 'cat_delete_not_found_456' }))
+        .rejects.toThrow("Catégorie non trouvée ou non supprimable.");
+    });
+  });
+
+  describe('list procedure', () => {
+    it('should return a list of categories for the authenticated user', async () => {
+      // 1. Arrange : Prépare une liste de catégories mockée
+      const mockReturnedCategories: Category[] = [
+        { 
+          id: 'cat_1', 
+          userId: mockUserId, 
+          name: 'Catégorie 1', 
+          icon: '1️⃣', 
+          color: '#111111', 
+          createdAt: new Date(), 
+          updatedAt: new Date() 
+        },
+        { 
+          id: 'cat_2', 
+          userId: mockUserId, 
+          name: 'Catégorie 2', 
+          icon: '2️⃣', 
+          color: '#222222', 
+          createdAt: new Date(), 
+          updatedAt: new Date() 
+        },
+      ];
+
+      // Configure le mock pour retourner la liste
+      mockCategoryFindMany_EXPORTED.mockResolvedValueOnce(mockReturnedCategories);
+
+      // 2. Act : Récupère la liste des catégories
+      const result = await caller.category.getAll();
+
+      // 3. Assert : Vérifie l'appel à findMany et le résultat
+      expect(mockCategoryFindMany_EXPORTED).toHaveBeenCalledOnce();
+      expect(mockCategoryFindMany_EXPORTED).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.anything()
+        })
+      );
+      expect(result).toEqual(mockReturnedCategories);
+    });
+
+    it('should return an empty list if the user has no categories', async () => {
+      // 1. Arrange : Simule aucune catégorie trouvée
+      mockCategoryFindMany_EXPORTED.mockResolvedValueOnce([]);
+
+      // 2. Act : Récupère la liste des catégories
+      const result = await caller.category.getAll();
+
+      // 3. Assert : Vérifie que le résultat est un tableau vide
+      expect(mockCategoryFindMany_EXPORTED).toHaveBeenCalledOnce();
+      expect(result).toEqual([]);
+    });
+  });
 
 }); // Fin describe 'Category Router' 
