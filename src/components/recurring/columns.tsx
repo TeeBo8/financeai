@@ -103,7 +103,7 @@ export const columns: ColumnDef<RecurringTransactionWithRelations>[] = [
     accessorKey: "nextOccurrenceDate",
     header: ({ column }) => (
       <div className="hidden md:table-cell">
-        <DataTableColumnHeader column={column} title="Prochaine occurrence" />
+        <DataTableColumnHeader column={column} title="Prochaine" />
       </div>
     ),
     cell: ({ row }) => {
@@ -120,7 +120,7 @@ export const columns: ColumnDef<RecurringTransactionWithRelations>[] = [
     accessorKey: "endDate",
     header: ({ column }) => (
       <div className="hidden lg:table-cell">
-        <DataTableColumnHeader column={column} title="Date de fin" />
+        <DataTableColumnHeader column={column} title="Fin" />
       </div>
     ),
     cell: ({ row }) => {
@@ -136,29 +136,41 @@ export const columns: ColumnDef<RecurringTransactionWithRelations>[] = [
   },
   {
     accessorKey: "notes",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Notes" />,
+    header: ({ column }) => (
+      <div className="hidden lg:table-cell">
+        <DataTableColumnHeader column={column} title="Notes" />
+      </div>
+    ),
     cell: ({ row }) => {
       const notes = row.getValue("notes");
-      return <div className="hidden md:table-cell">{notes as string || "-"}</div>;
+      return <div className="hidden lg:table-cell">{notes as string || "-"}</div>;
     },
     enableSorting: true,
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Créé le" />,
+    header: ({ column }) => (
+      <div className="hidden lg:table-cell">
+        <DataTableColumnHeader column={column} title="Créé le" />
+      </div>
+    ),
     cell: ({ row }) => {
       const date = row.getValue("createdAt");
-      return <div className="hidden md:table-cell">{format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}</div>;
+      return <div className="hidden lg:table-cell">{format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}</div>;
     },
     enableSorting: true,
   },
   {
     accessorKey: "updatedAt",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Modifié le" />,
+    header: ({ column }) => (
+      <div className="hidden lg:table-cell">
+        <DataTableColumnHeader column={column} title="Modifié le" />
+      </div>
+    ),
     cell: ({ row }) => {
       const date = row.getValue("updatedAt");
-      if (!date) return <div className="hidden md:table-cell">-</div>;
-      return <div className="hidden md:table-cell">{format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}</div>;
+      if (!date) return <div className="hidden lg:table-cell">-</div>;
+      return <div className="hidden lg:table-cell">{format(new Date(date as string | Date), "dd MMM yyyy", { locale: fr })}</div>;
     },
     enableSorting: true,
   },

@@ -6,12 +6,16 @@ import Link from 'next/link';
 import { LogIn, Bot, ListChecks, Target, ArrowRightLeft, PieChart } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import { signIn } from "next-auth/react";
+import GeminiHeroSection from '../components/landing/gemini-hero-section';
 
 export default function Home() {
   const { data: session } = useSession();
 
   return (
-    <div className="container mx-auto flex min-h-screen flex-col items-center px-4 pt-8 sm:pt-16 text-center">
+    <div className="flex min-h-screen flex-col items-center">
+      <GeminiHeroSection />
+      
+      {/* Ancienne section Hero commentée
       <section className="w-full max-w-3xl mb-8 sm:mb-16 md:mb-24">
         <h1 className="mb-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-primary">
           FinanceAI : <span className="block sm:inline">Maîtrisez Votre Budget</span>
@@ -49,24 +53,11 @@ export default function Home() {
             </Button>
           )}
         </div>
-
-        <div className="relative mx-auto mt-8 sm:mt-10 w-full max-w-4xl">
-          <Image
-            src="/images/financeai-screenshot-reports.png"
-            alt="Capture d&apos;écran de l&apos;application FinanceAI"
-            width={1200}
-            height={750}
-            quality={90}
-            priority
-            className="rounded-lg border bg-background shadow-xl"
-          />
-          <div className="absolute -bottom-4 -left-4 -z-10 h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-primary/20 blur-3xl"></div>
-          <div className="absolute -top-4 -right-4 -z-10 h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-secondary/20 blur-3xl"></div>
-        </div>
       </section>
+      */}
 
       {/* Section Fonctionnalités */}
-      <section className="w-full py-8 sm:py-12 md:py-16">
+      <section className="relative z-20 bg-background -mt-[75vh] pt-16 pb-16">
         <div className="container mx-auto px-4">
           <h2 className="mb-8 sm:mb-12 text-center text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
             Tout ce dont vous avez besoin, au même endroit
@@ -138,7 +129,7 @@ export default function Home() {
       {/* FIN Section Fonctionnalités */}
 
       {/* Section Footer */}
-      <footer className="mt-auto w-full border-t py-6 md:py-8"> {/* mt-auto pour le pousser en bas si la page est courte, border-t pour une ligne de séparation */}
+      <footer className="relative z-30 bg-background border-t mt-auto py-6 md:py-8">
         <div className="container mx-auto flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground md:flex-row md:justify-between">
           {/* Copyright */}
           <p>
