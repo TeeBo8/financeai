@@ -13,6 +13,7 @@ import {
   Tag,
   Landmark,
   RefreshCw,
+  Calculator,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { signOut } from "next-auth/react";
@@ -106,6 +107,12 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             href="/reports"
             icon={<BarChart3 className="size-4" />}
             title="Rapports"
+            isMobile={isMobile}
+          />
+          <NavItem
+            href="/tools/loan-calculator"
+            icon={<Calculator className="size-4" />}
+            title="Calculateur Prêt"
             isMobile={isMobile}
           />
           <NavItem
