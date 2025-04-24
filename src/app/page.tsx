@@ -16,9 +16,9 @@ export default function Home() {
       <div className="relative flex-1">
         <Particles 
           className="absolute inset-0 -z-10" 
-          quantity={30}
-          staticity={50}
-          ease={50}
+          quantity={100}
+          staticity={30}
+          ease={20}
         />
         <main className="flex flex-col items-center justify-center min-h-screen py-16">
           <section className="w-full max-w-4xl px-4">

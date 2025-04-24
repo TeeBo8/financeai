@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --particle-color: 0, 0, 0; /* Noir pour thème clair */
+}
+
+.dark {
+  --particle-color: 245, 239, 230; /* Couleur crème/beige pour thème sombre */
+} 
