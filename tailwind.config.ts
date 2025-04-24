@@ -9,7 +9,17 @@ const config: Config = {
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      animation: {
+        beams: "beams var(--duration,60s) linear infinite",
+      },
+      keyframes: {
+        beams: {
+          "from": { transform: "rotate(0deg)" },
+          "to": { transform: "rotate(360deg)" },
+        },
+      },
+    },
   },
   plugins: [],
 };
