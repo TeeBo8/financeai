@@ -1,4 +1,7 @@
+"use client";
+
 import { useRef } from "react";
+import { signIn } from "next-auth/react";
 import { GoogleGeminiEffect } from "../ui/google-gemini-effect";
 import { Button } from "../ui/button";
 import Image from "next/image";
@@ -35,6 +38,7 @@ export default function GeminiHeroSection() {
               size="lg" 
               variant="default"
               className="min-w-[200px] flex items-center gap-2"
+              onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
             >
               <Mail className="h-5 w-5" />
               Continuer avec Google
@@ -43,6 +47,7 @@ export default function GeminiHeroSection() {
               size="lg" 
               variant="secondary"
               className="min-w-[200px] flex items-center gap-2"
+              onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
             >
               <MessageSquare className="h-5 w-5" />
               Continuer avec Discord
