@@ -222,6 +222,31 @@ export const recurringTransactions = pgTable("recurring_transaction", {
   nextOccurrenceDateIdx: index("recurring_transaction_nextOccurrenceDate_idx").on(table.nextOccurrenceDate),
 }));
 
+// --- Nouvelle Table: Savings Goals ---
+export const savingsGoals = pgTable("savings_goal", {
+  id: text("id").primaryKey().$defaultFn(() => `goal_${crypto.randomUUID()}`),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 256 }).notNull(),
+  targetAmount: decimal("target_amount", { precision: 12, scale: 2 }).notNull(),
+  targetDate: timestamp("target_date", { mode: "date" }), // Nullable
+  currentAmount: decimal("current_amount", { precision: 12, scale: 2 }).notNull().default('0.00'),
+  icon: varchar("icon", { length: 50 }).default('🎯'), // Nullable avec default
+  color: varchar("color", { length: 7 }).default('#A855F7'), // Nullable avec default (format HEX)
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull().$onUpdate(() => new Date()),
+}, (table) => ({
+  userIdx: index("savings_goal_userId_idx").on(table.userId),
+}));
+
+// --- Relations pour Savings Goals ---
+export const savingsGoalsRelations = relations(savingsGoals, ({ one }) => ({
+  user: one(users, {
+    fields: [savingsGoals.userId],
+    references: [users.id],
+  }),
+}));
 
 // --- RELATIONS ---
 
@@ -233,6 +258,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   budgets: many(budgets),
   bankAccounts: many(bankAccounts),
   recurringTransactions: many(recurringTransactions), // Nouvelle relation
+  savingsGoals: many(savingsGoals), // Nouvelle relation
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -241,12 +267,14 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   budgets: many(budgets),
   budgetsToCategories: many(budgetsToCategories),
   recurringTransactions: many(recurringTransactions), // Nouvelle relation
+  savingsGoals: many(savingsGoals), // Nouvelle relation
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
   user: one(users, { fields: [bankAccounts.userId], references: [users.id] }),
   transactions: many(transactions),
   recurringTransactions: many(recurringTransactions), // Nouvelle relation
+  savingsGoals: many(savingsGoals), // Nouvelle relation
 }));
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
@@ -261,6 +289,7 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
 export const budgetsRelations = relations(budgets, ({ one, many }) => ({
   user: one(users, { fields: [budgets.userId], references: [users.id] }),
   budgetsToCategories: many(budgetsToCategories), // Relation vers la table de jointure
+  savingsGoals: many(savingsGoals), // Nouvelle relation
 }));
 
 export const budgetsToCategoriesRelations = relations(budgetsToCategories, ({ one }) => ({

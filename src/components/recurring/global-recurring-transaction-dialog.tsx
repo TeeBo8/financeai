@@ -6,9 +6,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "~/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { RecurringTransactionForm } from "./recurring-transaction-form";
-import { useRecurringTransactionDialogStore } from "~/stores/useRecurringTransactionDialogStore";
+import { useRecurringTransactionDialogStore } from "@/stores/useRecurringTransactionDialogStore";
 
 export function GlobalRecurringTransactionDialog() {
   const { isOpen, isEditing, closeDialog } = useRecurringTransactionDialogStore();

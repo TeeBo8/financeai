@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "~/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Receipt,
@@ -14,11 +14,12 @@ import {
   Landmark,
   RefreshCw,
   Calculator,
+  Target,
 } from "lucide-react";
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "./theme-toggle";
-import { SheetClose } from "~/components/ui/sheet";
+import { SheetClose } from "@/components/ui/sheet";
 
 interface NavItemProps {
   href: string;
@@ -89,6 +90,12 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             href="/budgets"
             icon={<PiggyBank className="size-4" />}
             title="Budgets"
+            isMobile={isMobile}
+          />
+          <NavItem
+            href="/goals"
+            icon={<Target className="size-4" />}
+            title="Objectifs"
             isMobile={isMobile}
           />
           <NavItem

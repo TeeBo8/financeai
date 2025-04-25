@@ -6,9 +6,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "~/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { CategoryForm } from "./category-form";
-import { useCategoryDialogStore } from "~/stores/useCategoryDialogStore";
+import { useCategoryDialogStore } from "@/stores/useCategoryDialogStore";
 
 export function GlobalCategoryDialog() {
   // Récupérer l'état et les actions depuis le store Zustand

@@ -7,10 +7,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "~/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { TransferForm } from "./transfer-form"; // Importe le formulaire
 import type { inferRouterOutputs } from '@trpc/server';
-import type { AppRouter } from '~/server/api/root';
+import type { AppRouter } from "@/server/api/root";
 
 type BankAccount = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
 

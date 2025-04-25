@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "~/server/auth";
-import { api } from "~/trpc/server";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
-import { ExpensesPieChart } from "~/components/reports/expenses-pie-chart";
-import { DatePickerWithRange } from "~/components/ui/date-range-picker";
-import { MonthlySummaryChart } from "~/components/reports/monthly-summary-chart";
-import { BalanceHistoryChart } from "~/components/reports/balance-history-chart";
+import { auth } from "@/server/auth";
+import { api } from "@/trpc/server";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ExpensesPieChart } from "@/components/reports/expenses-pie-chart";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { MonthlySummaryChart } from "@/components/reports/monthly-summary-chart";
+import { BalanceHistoryChart } from "@/components/reports/balance-history-chart";
 // Création d'un composant temporaire pour éviter le problème d'importation
 // À supprimer quand le problème de résolution de modules sera résolu
 import { subMonths, startOfDay, endOfDay } from "date-fns";

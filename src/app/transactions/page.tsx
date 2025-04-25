@@ -1,23 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { api } from "~/trpc/react";
-import { Button } from "~/components/ui/button";
+import { api } from "@/trpc/react";
+import { Button } from "@/components/ui/button";
 import { PlusCircle, FilterX, Loader2 } from "lucide-react";
-import { Skeleton } from "~/components/ui/skeleton";
-import { DatePicker } from "~/components/ui/date-picker";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "~/components/ui/select";
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { TransactionsDataTable } from "~/components/transactions/transactions-data-table";
-import { TransactionFilters } from "~/components/transactions/transaction-filters";
-import type { TransactionWithRelations } from "~/lib/types";
-import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
+import { TransactionsDataTable } from "@/components/transactions/transactions-data-table";
+import { TransactionFilters } from "@/components/transactions/transaction-filters";
+import type { TransactionWithRelations } from "@/lib/types";
+import { useTransactionDialogStore } from "@/stores/useTransactionDialogStore";
 import { useSearchParams } from "next/navigation";
 
 // Structure pour les filtres

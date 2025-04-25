@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
-import { TransactionForm } from "~/components/transactions/transaction-form";
-import { Dialog, DialogContent } from "~/components/ui/dialog";
+import { useTransactionDialogStore } from "@/stores/useTransactionDialogStore";
+import { TransactionForm } from "@/components/transactions/transaction-form";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export function GlobalTransactionDialog() {
   const { isOpen, closeDialog, mode, initialData, showAddAndNewButton } = useTransactionDialogStore();

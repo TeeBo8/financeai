@@ -1,14 +1,15 @@
-import { postRouter } from "~/server/api/routers/post";
-import { transactionRouter } from "~/server/api/routers/transaction";
-import { categoryRouter } from "~/server/api/routers/category";
-import { budgetRouter } from "~/server/api/routers/budget";
-import { bankAccountRouter } from "~/server/api/routers/bankAccount";
-import { accountRouter } from "~/server/api/routers/account";
-import { reportRouter } from "~/server/api/routers/report";
-import { dashboardRouter } from "~/server/api/routers/dashboard";
-import { aiRouter } from "~/server/api/routers/ai";
-import { recurringTransactionRouter } from "~/server/api/routers/recurringTransaction";
-import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
+import { postRouter } from "@/server/api/routers/post";
+import { transactionRouter } from "@/server/api/routers/transaction";
+import { categoryRouter } from "@/server/api/routers/category";
+import { budgetRouter } from "@/server/api/routers/budget";
+import { bankAccountRouter } from "@/server/api/routers/bankAccount";
+import { accountRouter } from "@/server/api/routers/account";
+import { reportRouter } from "@/server/api/routers/report";
+import { dashboardRouter } from "@/server/api/routers/dashboard";
+import { aiRouter } from "@/server/api/routers/ai";
+import { recurringTransactionRouter } from "@/server/api/routers/recurringTransaction";
+import { savingsGoalRouter } from "@/server/api/routers/savingsGoal";
+import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
  * This is the primary router for your server.
@@ -26,6 +27,7 @@ export const appRouter = createTRPCRouter({
   dashboard: dashboardRouter,
   ai: aiRouter,
   recurringTransaction: recurringTransactionRouter,
+  savingsGoal: savingsGoalRouter,
 });
 
 // export type definition of API

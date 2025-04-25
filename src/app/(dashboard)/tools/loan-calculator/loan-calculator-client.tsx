@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "~/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loanCalculatorSchema, type LoanCalculatorSchemaType } from "~/lib/schemas/loan-calculator-schema";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
-import { calculateLoanDetails } from "~/lib/utils/loan-calculator";
+import { loanCalculatorSchema, type LoanCalculatorSchemaType } from "@/lib/schemas/loan-calculator-schema";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { calculateLoanDetails } from "@/lib/utils/loan-calculator";
 
 type FormValues = {
   amount: string;

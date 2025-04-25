@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense } from "react";
-import { api } from "~/trpc/react";
-import { DashboardLayout } from "~/components/layout/DashboardLayout";
+import { api } from "@/trpc/react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import BudgetsClient from "./budgets-client";
 
 export default function BudgetsPage() {

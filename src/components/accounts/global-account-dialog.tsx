@@ -6,9 +6,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "~/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { AccountForm } from "./account-form"; // Importer le formulaire
-import { useAccountDialogStore } from "~/stores/useAccountDialogStore"; // Importer le store
+import { useAccountDialogStore } from "@/stores/useAccountDialogStore"; // Importer le store
 
 export function GlobalAccountDialog() {
   // Récupérer l'état et les actions depuis le store Zustand

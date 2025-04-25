@@ -1,10 +1,10 @@
 "use client";
 
-import { DataTable } from "~/components/ui/data-table";
+import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
 
 // Utilise le type retourné par la procédure tRPC
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type AccountWithBalance = RouterOutput['bankAccount']['getAll'][number];

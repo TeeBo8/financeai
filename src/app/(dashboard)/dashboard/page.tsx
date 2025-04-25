@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "~/server/auth";
-import { api } from "~/trpc/server";
-import { SummaryCard } from "~/components/dashboard/summary-card";
-import { AddTransactionButton } from "~/components/dashboard/add-transaction-button";
-import { BalanceChart } from "~/components/dashboard/balance-chart";
+import { auth } from "@/server/auth";
+import { api } from "@/trpc/server";
+import { SummaryCard } from "@/components/dashboard/summary-card";
+import { AddTransactionButton } from "@/components/dashboard/add-transaction-button";
+import { BalanceChart } from "@/components/dashboard/balance-chart";
 import {
   DollarSign,
   TrendingUp,
   TrendingDown,
   PiggyBank,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "Tableau de bord - FinanceAI",

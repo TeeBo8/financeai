@@ -3,10 +3,10 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { formatCurrency } from "~/lib/utils";
-import { Badge } from "~/components/ui/badge";
-import { DataTableColumnHeader } from "~/components/ui/data-table-column-header";
-import type { TransactionWithRelations } from "~/lib/types";
+import { formatCurrency } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
+import type { TransactionWithRelations } from "@/lib/types";
 import { TransactionRowActions } from "./transaction-row-actions";
 
 // Définition des colonnes pour la table des transactions

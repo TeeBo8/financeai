@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import { Check, ChevronsUpDown, Search, Circle } from "lucide-react";
-import { cn } from "~/lib/utils";
-import { Button } from "~/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "~/components/ui/popover";
+} from "@/components/ui/popover";
 import {
   FormControl,
   FormDescription,
@@ -16,7 +16,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "~/components/ui/form";
+} from "@/components/ui/form";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 
 // Type générique pour les options (doit avoir value et label)

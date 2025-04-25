@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 // Importe le type Account retourné par l'API pour l'édition
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from '@/server/api/root';
 import { type inferRouterOutputs } from '@trpc/server';
 
 // Les deux types possibles de compte avec balance

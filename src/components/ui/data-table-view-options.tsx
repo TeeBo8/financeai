@@ -3,7 +3,7 @@
 import { type Table, type Column } from "@tanstack/react-table"
 import { Settings2 } from "lucide-react"
 
-import { Button } from "~/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 
 // Interface pour définir les props attendues par le composant
 interface DataTableViewOptionsProps<TData> {

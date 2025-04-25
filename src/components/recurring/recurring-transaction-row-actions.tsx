@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Button } from "~/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "~/components/ui/alert-dialog";
-import { api } from "~/trpc/react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { useRecurringTransactionDialogStore } from "~/stores/useRecurringTransactionDialogStore"; // Importer le bon store
+import { useRecurringTransactionDialogStore } from "@/stores/useRecurringTransactionDialogStore"; // Importer le bon store
 
 // Importer le type
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RecurringTransactionWithRelations = inferRouterOutputs<AppRouter>['recurringTransaction']['getAll'][number];
 

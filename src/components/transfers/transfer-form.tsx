@@ -4,7 +4,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,21 +12,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "~/components/ui/select";
-import { DatePicker } from "~/components/ui/date-picker"; 
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker"; 
 import { Loader2 } from "lucide-react";
-import { api } from "~/trpc/react";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type { inferRouterOutputs } from '@trpc/server';
-import type { AppRouter } from '~/server/api/root';
+import type { AppRouter } from "@/server/api/root";
 
 type BankAccount = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
 

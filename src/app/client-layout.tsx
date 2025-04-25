@@ -1,30 +1,26 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import { Toaster } from "~/components/ui/sonner";
-import { TRPCReactProvider } from "~/trpc/react";
-import { GlobalTransactionDialog } from "~/components/transactions/global-transaction-dialog";
-import { GlobalAccountDialog } from "~/components/accounts/global-account-dialog";
-import { GlobalCategoryDialog } from "~/components/categories/global-category-dialog";
-import { GlobalRecurringTransactionDialog } from "~/components/recurring/global-recurring-transaction-dialog";
+import { Toaster } from "@/components/ui/sonner";
+import { TRPCReactProvider } from "@/trpc/react";
+import { GlobalTransactionDialog } from "@/components/transactions/global-transaction-dialog";
+import { GlobalAccountDialog } from "@/components/accounts/global-account-dialog";
+import { GlobalCategoryDialog } from "@/components/categories/global-category-dialog";
+import { GlobalRecurringTransactionDialog } from "@/components/recurring/global-recurring-transaction-dialog";
 // BudgetDialog a été déplacé dans BudgetsClient
 
-export default function ClientLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <TRPCReactProvider>
-      <SessionProvider>
+    <SessionProvider>
+      <TRPCReactProvider>
         {children}
-        <Toaster richColors closeButton position="top-right" />
+        <Toaster />
         <GlobalTransactionDialog />
         <GlobalAccountDialog />
         <GlobalCategoryDialog />
         <GlobalRecurringTransactionDialog />
         {/* BudgetDialog est maintenant géré directement dans BudgetsClient */}
-      </SessionProvider>
-    </TRPCReactProvider>
+      </TRPCReactProvider>
+    </SessionProvider>
   );
 } 

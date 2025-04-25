@@ -13,7 +13,7 @@ import {
   type VisibilityState
 } from "@tanstack/react-table";
 
-import { DataTableViewOptions } from "~/components/ui/data-table-view-options";
+import { DataTableViewOptions } from "@/components/ui/data-table-view-options";
 import { columns } from "./columns";
 import {
   Table,
@@ -22,11 +22,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "~/components/ui/table";
-import { DataTablePagination } from "~/components/ui/data-table-pagination";
+} from "@/components/ui/table";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // Type pour les catégories venant de l'API TRPC
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type Category = RouterOutput['category']['getAll'][number];

@@ -1,9 +1,9 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "~/components/ui/badge";
-import { Progress } from "~/components/ui/progress";
-import { Button } from "~/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -15,8 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "~/components/ui/alert-dialog";
-import { api } from "~/trpc/react";
+} from "@/components/ui/alert-dialog";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
 
 // Type simplifié pour le budget

@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
+import { useTransactionDialogStore } from "@/stores/useTransactionDialogStore";
 
 export function AddTransactionButton() {
   const { openDialog } = useTransactionDialogStore();

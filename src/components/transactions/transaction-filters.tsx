@@ -2,21 +2,21 @@
 
 import React, { useEffect } from 'react';
 import { Search, X, CalendarIcon } from 'lucide-react';
-import { api } from "~/trpc/react";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
-import { Card, CardContent } from "~/components/ui/card";
-import { cn } from "~/lib/utils";
+import { api } from "@/trpc/react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar } from "~/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "~/components/ui/popover";
+} from "@/components/ui/popover";
 import type { DateRange } from "react-day-picker";
 
 export function TransactionFilters() {

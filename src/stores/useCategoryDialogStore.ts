@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from '@/server/api/root';
 import { type inferRouterOutputs } from '@trpc/server';
 
 // Type pour une catégorie retournée par l'API

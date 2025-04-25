@@ -1,8 +1,8 @@
 "use client";
 
-import { DataTable } from "~/components/ui/data-table";
+import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
-import type { RecurringTransactionWithRelations } from "~/lib/types";
+import type { RecurringTransactionWithRelations } from "@/lib/types";
 
 interface RecurringTransactionsDataTableProps {
   data: RecurringTransactionWithRelations[];

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { api } from "~/trpc/react";
+import { api } from "@/trpc/react";
 import {
   Table,
   TableBody,
@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "~/components/ui/table";
-import { Button } from "~/components/ui/button";
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Trash2, Pencil, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,14 +23,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "~/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "~/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { CategoryForm } from './category-form';
 
 // Type pour une catégorie (simple définition explicite)

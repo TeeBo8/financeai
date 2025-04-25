@@ -2,18 +2,18 @@
 
 import React from "react";
 import { MoreHorizontal } from "lucide-react"; 
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { api } from "~/trpc/react";
+import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
-import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
+import { useTransactionDialogStore } from "@/stores/useTransactionDialogStore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +23,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "~/components/ui/alert-dialog";
-import type { TransactionWithRelations } from "~/lib/types";
-import type { TransactionData } from "~/components/transactions/transaction-form";
+} from "@/components/ui/alert-dialog";
+import type { TransactionWithRelations } from "@/lib/types";
+import type { TransactionData } from "@/components/transactions/transaction-form";
 
 interface TransactionRowActionsProps {
   transaction: TransactionWithRelations;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,13 +20,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "~/components/ui/alert-dialog";
-import { api } from "~/trpc/react";
+} from "@/components/ui/alert-dialog";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { useCategoryDialogStore } from "~/stores/useCategoryDialogStore";
+import { useCategoryDialogStore } from "@/stores/useCategoryDialogStore";
 
 // Type pour les catégories venant de l'API TRPC
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type Category = RouterOutput['category']['getAll'][number];

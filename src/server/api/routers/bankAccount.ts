@@ -1,8 +1,8 @@
 // src/server/api/routers/bankAccount.ts
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { db } from "~/server/db";
-import { bankAccounts, transactions } from "~/server/db/schema";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { db } from "@/server/db";
+import { bankAccounts, transactions } from "@/server/db/schema";
 import { and, eq, desc, sql, sum, getTableColumns } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 

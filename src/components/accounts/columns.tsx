@@ -1,15 +1,15 @@
 "use client";
 
 import { type ColumnDef } from "@tanstack/react-table";
-import { formatCurrency } from "~/lib/utils";
-import { DataTableColumnHeader } from "~/components/ui/data-table-column-header";
+import { formatCurrency } from "@/lib/utils";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { AccountRowActions } from "./account-row-actions";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Circle } from "lucide-react"; // Icône par défaut si aucune n'est fournie
 
 // Utilise le type retourné par la procédure tRPC pour plus de sûreté
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type AccountWithBalance = RouterOutput['bankAccount']['getAll'][number];

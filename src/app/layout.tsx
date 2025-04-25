@@ -1,9 +1,9 @@
-import "~/styles/globals.css";
+import "@/styles/globals.css";
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import ClientLayout from "./client-layout";
-import { ThemeProvider } from "~/components/layout/theme-provider";
+import { ClientLayout } from "./client-layout";
+import { ThemeProvider } from "@/components/layout/theme-provider";
 
 export const metadata: Metadata = {
   title: "FinanceAI",

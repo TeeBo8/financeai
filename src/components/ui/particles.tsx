@@ -71,7 +71,7 @@ export default function Particles({
         0,
         2 * Math.PI
       );
-      context.current.fillStyle = `rgba(255, 255, 255, ${circle.alpha})`;
+      context.current.fillStyle = `rgba(255, 248, 240, ${circle.alpha})`;
       context.current.fill();
     }
   }, []);
@@ -193,8 +193,8 @@ export default function Particles({
     const size = Math.floor(Math.random() * 1.5) + 0.5;
     const alpha = 0;
     const targetAlpha = parseFloat((Math.random() * 0.8 + 0.2).toFixed(1));
-    const dx = (Math.random() - 0.5) * 0.4;
-    const dy = (Math.random() - 0.5) * 0.4;
+    const dx = (Math.random() - 0.5) * 0.2;
+    const dy = (Math.random() - 0.5) * 0.2;
     const magnetism = 0.5 + Math.random() * 4;
     return {
       x,

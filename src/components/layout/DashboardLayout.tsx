@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import { Sidebar } from "./Sidebar";
-import { GlobalTransactionDialog } from "~/components/transactions/global-transaction-dialog";
-import { Button } from "~/components/ui/button";
+import { GlobalTransactionDialog } from "@/components/transactions/global-transaction-dialog";
+import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
-} from "~/components/ui/sheet";
+} from "@/components/ui/sheet";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

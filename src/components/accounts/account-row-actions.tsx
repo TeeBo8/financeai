@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,14 +20,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "~/components/ui/alert-dialog";
-import { api } from "~/trpc/react";
+} from "@/components/ui/alert-dialog";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { formatCurrency } from "~/lib/utils";
-import { useAccountDialogStore } from "~/stores/useAccountDialogStore";
+import { formatCurrency } from "@/lib/utils";
+import { useAccountDialogStore } from "@/stores/useAccountDialogStore";
 
 // Récupérer le type avec balance si besoin (normalement pas nécessaire ici, l'ID suffit)
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type AccountWithBalance = RouterOutput['bankAccount']['getAll'][number];

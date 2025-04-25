@@ -6,13 +6,13 @@ import {
   createTRPCRouter,
   protectedProcedure, // <-- Important : Procédure accessible uniquement aux utilisateurs connectés
   // publicProcedure, // On n'en a pas besoin ici pour l'instant
-} from "~/server/api/trpc";
+} from "@/server/api/trpc";
 
 // Importez votre schéma et la connexion db
-import { db } from "~/server/db";
-import * as schema from "~/server/db/schema"; // Importe toutes les tables et relations
+import { db } from "@/server/db";
+import * as schema from "@/server/db/schema"; // Importe toutes les tables et relations
 import { TRPCError } from "@trpc/server";
-import { transactions, bankAccounts } from "~/server/db/schema"; // Import direct des tables nécessaires
+import { transactions, bankAccounts } from "@/server/db/schema"; // Import direct des tables nécessaires
 
 // Schéma de validation pour la création d'une transaction
 const createTransactionSchema = z.object({

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
     Form,
     FormControl,
@@ -11,12 +11,12 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
-import { api } from "~/trpc/react";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { categoryFormSchema, type CategoryFormValues } from "~/lib/schemas/category-schema";
-import { useCategoryDialogStore, defaultCategoryFormValues } from "~/stores/useCategoryDialogStore";
+import { categoryFormSchema, type CategoryFormValues } from "@/lib/schemas/category-schema";
+import { useCategoryDialogStore, defaultCategoryFormValues } from "@/stores/useCategoryDialogStore";
 import { Loader2 } from 'lucide-react';
 
 interface CategoryFormProps {

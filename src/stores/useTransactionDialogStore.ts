@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { type TransactionData } from "~/components/transactions/transaction-form";
+import { type TransactionData } from "@/components/transactions/transaction-form";
 
 interface TransactionDialogState {
   isOpen: boolean;

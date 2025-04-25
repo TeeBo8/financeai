@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCurrency } from "~/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Type des données attendues

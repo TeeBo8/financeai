@@ -18,6 +18,12 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'], // Pattern pour trouver les fichiers de test
     // La configuration UI est désactivée en attendant de résoudre le problème de typage
     ui: false,
+    env: {
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/finance_ai_test",
+      NODE_ENV: "test",
+      NEXTAUTH_URL: "http://localhost:3000",
+      NEXTAUTH_SECRET: "test-secret"
+    },
     
     // Configuration de la couverture de code
     coverage: {

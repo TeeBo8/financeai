@@ -1,8 +1,8 @@
 "use client";
 
-import { DataTable } from "~/components/ui/data-table";
+import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
-import type { TransactionWithRelations } from "~/lib/types";
+import type { TransactionWithRelations } from "@/lib/types";
 
 interface TransactionsDataTableProps {
   transactions: TransactionWithRelations[];

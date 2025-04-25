@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
     Form,
     FormControl,
@@ -12,13 +12,15 @@ import {
     FormLabel,
     FormMessage,
     FormDescription,
-} from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
-import { api } from "~/trpc/react";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { accountFormSchema, type AccountFormValues } from "~/lib/schemas/account-schema";
-import { useAccountDialogStore, defaultAccountFormValues } from "~/stores/useAccountDialogStore";
+import { accountFormSchema, type AccountFormValues } from "@/lib/schemas/account-schema";
+import { useAccountDialogStore, defaultAccountFormValues } from "@/stores/useAccountDialogStore";
 import { Loader2 } from 'lucide-react'; // Pour l'indicateur de chargement
+import { z } from "zod";
+import { type RouterOutputs } from "@/trpc/shared";
 
 // Pas besoin de props complexes ici, on lira depuis le store
 interface AccountFormProps {

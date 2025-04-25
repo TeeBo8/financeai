@@ -8,10 +8,10 @@ import {
   DialogTitle,
   DialogDescription,
   // DialogFooter, // Pas nécessaire ici, le formulaire a son bouton
-} from "~/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { AccountForm } from "./account-form"; // Importe notre formulaire
 import type { inferRouterOutputs } from '@trpc/server';
-import type { AppRouter } from '~/server/api/root';
+import type { AppRouter } from "@/server/api/root";
 
 type AccountWithBalance = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
 

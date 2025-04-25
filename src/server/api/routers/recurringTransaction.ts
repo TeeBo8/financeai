@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { recurringTransactions } from "~/server/db/schema";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { recurringTransactions } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { revalidatePath } from "next/cache";
 import { add, parseISO } from 'date-fns'; // Pour calculer les dates
-import { type RecurringTransactionWithRelations } from "~/lib/types";
+import { type RecurringTransactionWithRelations } from "@/lib/types";
 
 // Helper pour calculer la prochaine date d'occurrence
 function calculateNextOccurrence(startDate: Date, frequency: string, interval: number): Date {

@@ -3,18 +3,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "~/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
-import { api } from "~/trpc/react";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { recurringTransactionFormSchema } from "~/lib/schemas/recurring-transaction-schema";
-import { useRecurringTransactionDialogStore, defaultRecurringTransactionFormValues } from "~/stores/useRecurringTransactionDialogStore";
+import { recurringTransactionFormSchema } from "@/lib/schemas/recurring-transaction-schema";
+import { useRecurringTransactionDialogStore, defaultRecurringTransactionFormValues } from "@/stores/useRecurringTransactionDialogStore";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { z } from "zod";
-import { ComboboxField, type ComboboxOptionWithStyle } from "~/components/ui/combobox-rhf";
+import { ComboboxField, type ComboboxOptionWithStyle } from "@/components/ui/combobox-rhf";
 
 // Helper pour formater les dates pour les inputs type="date"
 const formatDateForInput = (date: Date | string | null | undefined): string => {

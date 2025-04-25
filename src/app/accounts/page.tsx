@@ -1,6 +1,6 @@
 "use server";
 
-import { api } from "~/trpc/server";
+import { api } from "@/trpc/server";
 import { AccountsPageClient } from "./accounts-page-client";
 
 export default async function AccountsPage() {

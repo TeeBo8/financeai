@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { type AppRouter } from "~/server/api/root";
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from "@trpc/server";
-import { api } from "~/trpc/react";
-import { Button } from "~/components/ui/button";
+import { api } from "@/trpc/react";
+import { Button } from "@/components/ui/button";
 import { PlusCircle, FilterX, Loader2 } from "lucide-react";
-import { Skeleton } from "~/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import {
   Select,
@@ -14,20 +14,20 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "~/components/ui/select";
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { BudgetDialog } from "~/components/budgets/budget-dialog";
-import { BudgetCardActions } from "~/components/budgets/budget-card-actions";
-import { Badge } from "~/components/ui/badge";
-import { Progress } from "~/components/ui/progress";
+import { BudgetDialog } from "@/components/budgets/budget-dialog";
+import { BudgetCardActions } from "@/components/budgets/budget-card-actions";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -35,12 +35,12 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "~/components/ui/sheet";
+} from "@/components/ui/sheet";
 import {
   SelectGroup,
   SelectLabel,
-} from "~/components/ui/select";
-import { BudgetForm } from "~/components/budgets/budget-form";
+} from "@/components/ui/select";
+import { BudgetForm } from "@/components/budgets/budget-form";
 
 // Type pour un budget avec ses dépenses
 type BudgetWithSpending = inferRouterOutputs<AppRouter>["budget"]["getAll"][number];

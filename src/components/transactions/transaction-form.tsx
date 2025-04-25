@@ -8,21 +8,21 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon, ArrowUpCircle, ArrowDownCircle, Loader2, WandSparkles } from "lucide-react";
-import { api } from "~/trpc/react";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { cn } from "~/lib/utils";
-import { useTransactionDialogStore } from "~/stores/useTransactionDialogStore";
+import { cn } from "@/lib/utils";
+import { useTransactionDialogStore } from "@/stores/useTransactionDialogStore";
 
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Calendar } from "~/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "~/components/ui/dialog";
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -31,14 +31,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "~/components/ui/form";
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "~/components/ui/popover";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { ComboboxField, type ComboboxOption, type ComboboxOptionWithStyle } from "~/components/ui/combobox-rhf";
+} from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ComboboxField, type ComboboxOption, type ComboboxOptionWithStyle } from "@/components/ui/combobox-rhf";
 
 // Schéma de validation du formulaire
 const formSchema = z.object({

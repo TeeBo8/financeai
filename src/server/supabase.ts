@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { env } from '~/env';
+import { env } from "@/env";
 
 // Création d'un client Supabase singleton pour réutilisation
 const supabaseUrl = 'https://ymtizdwqnspjluiwyqpt.supabase.co';

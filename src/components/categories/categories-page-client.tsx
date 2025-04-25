@@ -4,7 +4,7 @@ import { CategoriesDataTable } from "./categories-data-table";
 import { AddCategoryDialog } from "./add-category-dialog";
 
 // Type pour les catégories venant de l'API TRPC
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type Category = RouterOutput['category']['getAll'][number];

@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { useCategoryDialogStore } from "~/stores/useCategoryDialogStore";
+import { useCategoryDialogStore } from "@/stores/useCategoryDialogStore";
 
 export function AddCategoryDialog() {
     const { openCreateDialog } = useCategoryDialogStore();

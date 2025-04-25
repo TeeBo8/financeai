@@ -1,5 +1,5 @@
-import { CategoriesPageClient } from "~/components/categories/categories-page-client";
-import { api } from "~/trpc/server";
+import { CategoriesPageClient } from "@/components/categories/categories-page-client";
+import { api } from "@/trpc/server";
 
 export const dynamic = "force-dynamic";
 

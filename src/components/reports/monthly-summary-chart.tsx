@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCurrency } from "~/lib/utils"; // Réutilise l'helper existant
+import { formatCurrency } from "@/lib/utils"; // Réutilise l'helper existant
 import {
   Bar,
   BarChart,

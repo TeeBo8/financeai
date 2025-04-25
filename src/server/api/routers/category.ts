@@ -4,10 +4,10 @@ import { eq, and, desc, ne } from "drizzle-orm";
 import {
   createTRPCRouter,
   protectedProcedure,
-} from "~/server/api/trpc";
+} from "@/server/api/trpc";
 
-import { db } from "~/server/db";
-import * as schema from "~/server/db/schema";
+import { db } from "@/server/db";
+import * as schema from "@/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { revalidatePath } from "next/cache";
 

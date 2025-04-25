@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCurrency } from "~/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import {
   Line,
   LineChart,

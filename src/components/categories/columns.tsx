@@ -2,11 +2,11 @@
 
 import React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { DataTableColumnHeader } from "~/components/ui/data-table-column-header";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { CategoryRowActions } from "./category-row-actions";
 
 // Type pour les catégories venant de l'API TRPC
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type Category = RouterOutput['category']['getAll'][number];

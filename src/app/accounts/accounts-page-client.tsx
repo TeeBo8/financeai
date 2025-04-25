@@ -1,14 +1,14 @@
 "use client";
 
-import { Button } from "~/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowRightLeft } from "lucide-react";
 import { useState } from "react";
-import { AccountsDataTable } from "~/components/accounts/accounts-data-table";
-import TransferFundsDialog from "~/components/transfers/transfer-funds-dialog";
-import { useAccountDialogStore } from "~/stores/useAccountDialogStore";
+import { AccountsDataTable } from "@/components/accounts/accounts-data-table";
+import TransferFundsDialog from "@/components/transfers/transfer-funds-dialog";
+import { useAccountDialogStore } from "@/stores/useAccountDialogStore";
 
 // Utilise le type retourné par la procédure tRPC
-import { type AppRouter } from '~/server/api/root';
+import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type AccountWithBalance = RouterOutput['bankAccount']['getAll'][number];
