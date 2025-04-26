@@ -114,8 +114,8 @@ export function TransactionForm({
   const { data: categories } = api.category.getAll.useQuery();
   
   // Récupérer les comptes bancaires
-  const { data: bankAccounts } = api.bankAccount.getAll.useQuery();
-
+  const { data: bankAccounts, isLoading, isError, error } = api.bankAccount.getAll.useQuery();
+  
   // Obtenir le contexte tRPC pour pouvoir invalider les queries
   const utils = api.useUtils();
 
@@ -295,6 +295,9 @@ export function TransactionForm({
     icon: acc.icon,
     color: acc.color,
   })) ?? [];
+
+  // Log pour vérifier les options formatées
+  console.log('>>> Account Options for Combobox:', accountOptions);
 
   const categoryOptions: ComboboxOption[] = (categories ?? []).map(category => ({
     value: category.id,

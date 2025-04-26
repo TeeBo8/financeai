@@ -101,7 +101,6 @@ export function GoalsClient() {
       });
     },
     onError: (error) => {
-      console.error("Erreur création objectif:", error);
       toast.error("Erreur de création", {
         description: error.message || 'Une erreur est survenue lors de la création de l&apos;objectif.',
       });
@@ -117,7 +116,6 @@ export function GoalsClient() {
       });
     },
     onError: (error) => {
-      console.error("Erreur contribution:", error);
       toast.error("Erreur de contribution", {
         description: error.message || 'Une erreur est survenue lors de l&apos;ajout de la contribution.',
       });
@@ -133,7 +131,6 @@ export function GoalsClient() {
       });
     },
     onError: (error) => {
-      console.error("Erreur mise à jour objectif:", error);
       toast.error("Erreur de mise à jour", {
         description: error.message || 'Une erreur est survenue lors de la modification de l&apos;objectif.',
       });
@@ -149,7 +146,6 @@ export function GoalsClient() {
       });
     },
     onError: (error) => {
-      console.error("Erreur suppression objectif:", error);
       toast.error("Erreur de suppression", {
         description: error.message || 'Une erreur est survenue lors de la suppression de l&apos;objectif.',
       });

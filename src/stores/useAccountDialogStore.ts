@@ -3,8 +3,7 @@ import { create } from 'zustand';
 import { type AppRouter } from '@/server/api/root';
 import { type inferRouterOutputs } from '@trpc/server';
 
-// Les deux types possibles de compte avec balance
-type AccountGetAllResult = inferRouterOutputs<AppRouter>['account']['getAll'][number];
+// Type pour les comptes bancaires
 type BankAccountGetAllResult = inferRouterOutputs<AppRouter>['bankAccount']['getAll'][number];
 
 // Type unifié avec les propriétés essentielles pour l'édition
@@ -25,7 +24,7 @@ type AccountDialogState = {
   isEditing: boolean;
   accountToEdit: AccountWithBalance | null; // Stocke le compte complet pour l'édition
   openCreateDialog: () => void;
-  openEditDialog: (account: AccountWithBalance | BankAccountGetAllResult) => void;
+  openEditDialog: (account: BankAccountGetAllResult) => void;
   closeDialog: () => void;
 };
 

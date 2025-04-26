@@ -27,7 +27,7 @@ export const defaultRecurringTransactionFormValues = {
   // Mettre la date de début à aujourd'hui par défaut ? Format YYYY-MM-DD pour l'input type="date"
   startDate: new Date().toISOString().split('T')[0],
   endDate: null, // Pas de date de fin par défaut
-  accountId: '', // Sera rempli par un select/combobox
+  bankAccountId: '', // Sera rempli par un select/combobox
   categoryId: null, // Optionnel
 };
 

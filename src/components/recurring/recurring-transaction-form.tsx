@@ -39,7 +39,7 @@ type FormValues = {
   interval: number;
   startDate: string;
   endDate: string;
-  accountId: string;
+  bankAccountId: string;
   categoryId: string | null;
 };
 
@@ -48,12 +48,12 @@ export function RecurringTransactionForm() {
     const { closeDialog, isEditing, dataToEdit } = useRecurringTransactionDialogStore();
     
     // États locaux pour suivre les sélections
-    const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+    const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>("");
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
 
     // --- Préparation Données (Comptes, Catégories) ---
-    const { data: accounts = [], isLoading: isLoadingAccounts } = api.account.getAll.useQuery();
+    const { data: bankAccounts = [], isLoading: isLoadingAccounts } = api.bankAccount.getAll.useQuery();
     const { data: categories = [], isLoading: isLoadingCategories } = api.category.getAll.useQuery();
 
     // --- Initialisation Formulaire ---
@@ -64,7 +64,8 @@ export function RecurringTransactionForm() {
             ...defaultRecurringTransactionFormValues,
             type: 'income',
             categoryId: null,
-            endDate: ""
+            endDate: "",
+            bankAccountId: '',
         },
     });
 
@@ -82,7 +83,7 @@ export function RecurringTransactionForm() {
                 
                 // ID du compte
                 if (dataToEdit.bankAccountId) {
-                    setSelectedAccountId(dataToEdit.bankAccountId);
+                    setSelectedBankAccountId(dataToEdit.bankAccountId);
                 }
                 
                 // ID de catégorie 
@@ -100,7 +101,7 @@ export function RecurringTransactionForm() {
                     // Dates au format YYYY-MM-DD pour input type="date"
                     startDate: formatDateForInput(dataToEdit.startDate),
                     endDate: formatDateForInput(dataToEdit.endDate),
-                    accountId: dataToEdit.bankAccountId || "",
+                    bankAccountId: dataToEdit.bankAccountId || "",
                     categoryId: dataToEdit.categoryId || null,
                 });
             } catch (e) {
@@ -110,13 +111,14 @@ export function RecurringTransactionForm() {
         } else {
             // Reset pour la création
             setTransactionType('income');
-            setSelectedAccountId("");
+            setSelectedBankAccountId("");
             setSelectedCategoryId(null);
             form.reset({
                 ...defaultRecurringTransactionFormValues,
                 type: 'income',
                 categoryId: null,
-                endDate: ""
+                endDate: "",
+                bankAccountId: '',
             });
         }
     }, [isEditing, dataToEdit, form]);
@@ -145,7 +147,7 @@ export function RecurringTransactionForm() {
 
     // --- Soumission ---
     const onSubmit = (data: FormValues) => {
-        if (!data.accountId) {
+        if (!data.bankAccountId) {
             toast.error("Veuillez sélectionner un compte bancaire");
             return;
         }
@@ -163,7 +165,7 @@ export function RecurringTransactionForm() {
             startDate: data.startDate,
             endDate: data.endDate || null,
             categoryId: data.categoryId,
-            bankAccountId: data.accountId,
+            bankAccountId: data.bankAccountId,
         };
         
         if (isEditing && dataToEdit) {
@@ -257,15 +259,15 @@ export function RecurringTransactionForm() {
                 {/* Compte Bancaire - Remplacé par ComboboxField */}
                 <FormField
                     control={form.control}
-                    name="accountId"
+                    name="bankAccountId"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Compte Bancaire</FormLabel>
                             <ComboboxField
                                 control={form.control}
-                                name="accountId"
+                                name="bankAccountId"
                                 label=""
-                                options={accounts?.map(acc => ({
+                                options={bankAccounts?.map(acc => ({
                                     value: acc.id,
                                     label: acc.name,
                                     icon: acc.icon,

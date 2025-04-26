@@ -57,8 +57,7 @@ export const recurringTransactionFormSchema = z.object({
              .optional(), // Peut ne pas être fourni
 
   // Relations
-  accountId: z.string({ required_error: "Le compte bancaire est requis." })
-               .uuid({ message: "ID de compte invalide." }),
+  bankAccountId: z.string().min(1, "Compte bancaire requis"),
   // categoryId est optionnel, mais si fourni, doit être un UUID valide ou null
   categoryId: z.string()
                 .uuid({ message: "ID de catégorie invalide." })

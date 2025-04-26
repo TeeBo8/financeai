@@ -3,7 +3,6 @@ import { transactionRouter } from "@/server/api/routers/transaction";
 import { categoryRouter } from "@/server/api/routers/category";
 import { budgetRouter } from "@/server/api/routers/budget";
 import { bankAccountRouter } from "@/server/api/routers/bankAccount";
-import { accountRouter } from "@/server/api/routers/account";
 import { reportRouter } from "@/server/api/routers/report";
 import { dashboardRouter } from "@/server/api/routers/dashboard";
 import { aiRouter } from "@/server/api/routers/ai";
@@ -22,7 +21,6 @@ export const appRouter = createTRPCRouter({
   category: categoryRouter,
   budget: budgetRouter,
   bankAccount: bankAccountRouter,
-  account: accountRouter,
   report: reportRouter,
   dashboard: dashboardRouter,
   ai: aiRouter,

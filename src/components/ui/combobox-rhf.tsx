@@ -166,6 +166,15 @@ export function ComboboxField<TFieldValues extends FieldValues>({
                       placeholder={searchPlaceholder}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const firstOption = filteredOptions[0];
+                          if (firstOption) {
+                            handleSelect(firstOption.value);
+                          }
+                        }
+                      }}
                     />
                   </div>
                   
