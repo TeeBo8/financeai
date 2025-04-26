@@ -68,11 +68,12 @@ export default function Home() {
                 </Button>
               </div>
             ) : (
-              <Button asChild size="lg" className="mx-auto">
-                <Link href="/dashboard">
-                  Accéder à mon compte
-                </Link>
-              </Button>
+              <Link 
+                href="/dashboard"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 mx-auto"
+              >
+                Accéder à mon compte
+              </Link>
             )}
           </div>
         </section>

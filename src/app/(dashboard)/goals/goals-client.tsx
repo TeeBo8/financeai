@@ -201,32 +201,9 @@ export function GoalsClient() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Créer mon premier objectif
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Créer un Nouvel Objectif</DialogTitle>
-                  <DialogDescription>
-                    Définissez votre objectif d&apos;épargne. Cliquez sur Créer lorsque vous avez terminé.
-                  </DialogDescription>
-                </DialogHeader>
-                <SavingsGoalForm
-                  onSubmit={async (values) => {
-                    const dataToSend = {
-                      ...values,
-                      targetAmount: Number(values.targetAmount)
-                    };
-                    await createMutation.mutateAsync(dataToSend);
-                  }}
-                  onSuccess={() => setIsCreateDialogOpen(false)}
-                  isPending={createMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Créer mon premier objectif
+            </Button>
           </CardContent>
         </Card>
       ) : (
