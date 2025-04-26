@@ -71,7 +71,7 @@ export default function Particles({
         0,
         2 * Math.PI
       );
-      context.current.fillStyle = `rgba(255, 248, 240, ${circle.alpha})`;
+      context.current.fillStyle = `rgba(var(--particle-color), ${circle.alpha})`;
       context.current.fill();
     }
   }, []);

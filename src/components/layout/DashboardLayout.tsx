@@ -30,7 +30,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Header Mobile */}
         <header className="flex h-14 items-center gap-4 border-b px-4 md:hidden">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
+            <SheetTrigger>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Ouvrir le menu</span>
