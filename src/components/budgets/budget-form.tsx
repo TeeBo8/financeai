@@ -1,20 +1,38 @@
 // src/components/budgets/budget-form.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { Check, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 
-export interface BudgetFormData {
+const formSchema = z.object({
+    name: z.string().min(1, "Le nom du budget est requis"),
+    amount: z.number().min(0.01, "Le montant doit être positif"),
+    period: z.enum(["MONTHLY", "YEARLY"]),
+    categoryIds: z.array(z.string()).min(1, "Veuillez sélectionner au moins une catégorie"),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+export interface BudgetFormData extends FormValues {
     id?: string;
-    name: string;
-    amount: number;
-    period: "MONTHLY" | "YEARLY";
-    categoryIds: string[];
 }
 
 interface BudgetFormProps {
@@ -26,39 +44,18 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
     const utils = api.useUtils();
     const isEditMode = !!initialData?.id;
 
-    console.log("BudgetForm - isEditMode:", isEditMode, "initialData:", initialData);
-
-    // État simple sans react-hook-form
-    const [name, setName] = useState(initialData?.name || '');
-    const [amount, setAmount] = useState(initialData?.amount || 0);
-    const [period, setPeriod] = useState(initialData?.period || 'MONTHLY');
-    const [selectedCategories, setSelectedCategories] = useState<string[]>(initialData?.categoryIds || []);
-    
-    // useEffect pour mettre à jour le formulaire quand initialData change
-    useEffect(() => {
-        console.log("BudgetForm useEffect - isEditMode:", isEditMode, "initialData:", initialData);
-        if (isEditMode && initialData) {
-            setName(initialData.name);
-            // Assurer que amount est un nombre pour le formulaire
-            setAmount(typeof initialData.amount === 'string' ? parseFloat(initialData.amount) : initialData.amount);
-            // Assurer que la casse correspond (MONTHLY/YEARLY)
-            setPeriod(initialData.period);
-            // Doit être un tableau d'IDs
-            setSelectedCategories(initialData.categoryIds);
-        }
-    }, [isEditMode, initialData]);
-
     // Chargement des catégories
     const { data: categories, isLoading: isLoadingCategories } = api.category.getAll.useQuery();
 
-    // Toggle pour ajouter/retirer une catégorie
-    const toggleCategory = (categoryId: string) => {
-        setSelectedCategories(prev => 
-            prev.includes(categoryId)
-                ? prev.filter(id => id !== categoryId)
-                : [...prev, categoryId]
-        );
-    };
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: initialData?.name ?? "",
+            amount: initialData?.amount ?? 0,
+            period: initialData?.period ?? "MONTHLY",
+            categoryIds: initialData?.categoryIds ?? [],
+        },
+    });
 
     // Mutation pour créer un budget
     const createBudget = api.budget.create.useMutation({
@@ -88,146 +85,158 @@ export function BudgetForm({ initialData = null, onClose }: BudgetFormProps) {
     const isPending = createBudget.isPending || updateBudget.isPending;
 
     // Soumission du formulaire
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        if (!name) {
-            toast.error("Le nom du budget est requis");
-            return;
-        }
-        
-        if (amount <= 0) {
-            toast.error("Le montant doit être positif");
-            return;
-        }
-
-        const formData = {
-            name,
-            amount,
-            period,
-            categoryIds: selectedCategories
-        };
-
-        console.log("Submitting budget:", isEditMode ? "UPDATE" : "CREATE", formData);
-
+    const onSubmit = (data: FormValues) => {
         if (isEditMode && initialData?.id) {
             updateBudget.mutate({
                 id: initialData.id,
-                ...formData,
+                ...data,
             });
         } else {
-            createBudget.mutate(formData);
+            createBudget.mutate(data);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-            {/* Nom du budget */}
-            <div className="space-y-2">
-                <Label htmlFor="name">Nom du budget</Label>
-                <Input 
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: Courses mensuelles" 
-                    disabled={isPending} 
-                />
-            </div>
-
-            {/* Montant alloué */}
-            <div className="space-y-2">
-                <Label htmlFor="amount">Montant alloué</Label>
-                <Input
-                    id="amount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                    placeholder="Ex: 150"
-                    step="0.01"
-                    min="0"
-                    disabled={isPending}
-                />
-                <p className="text-sm text-muted-foreground">
-                    Montant maximum que vous souhaitez dépenser
-                </p>
-            </div>
-
-            {/* Période */}
-            <div className="space-y-2">
-                <Label htmlFor="period">Période</Label>
-                <select 
-                    id="period"
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value as "MONTHLY" | "YEARLY")}
-                    className="w-full p-2 border rounded"
-                    disabled={isPending}
-                >
-                    <option value="MONTHLY">Mensuel</option>
-                    <option value="YEARLY">Annuel</option>
-                </select>
-                <p className="text-sm text-muted-foreground">
-                    À quelle fréquence ce budget se renouvelle-t-il ?
-                </p>
-            </div>
-
-            {/* Catégories */}
-            <div className="space-y-2">
-                <Label>Catégories</Label>
-                <div className="border rounded-md p-3">
-                    {isLoadingCategories ? (
-                        <div className="py-2 text-muted-foreground">Chargement...</div>
-                    ) : !categories || categories.length === 0 ? (
-                        <div className="py-2 text-muted-foreground">Aucune catégorie.</div>
-                    ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {categories.map(category => (
-                                <div 
-                                    key={category.id}
-                                    className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
-                                        selectedCategories.includes(category.id) 
-                                            ? 'bg-primary/10 border border-primary/30' 
-                                            : 'hover:bg-muted'
-                                    } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    onClick={() => !isPending && toggleCategory(category.id)}
-                                >
-                                    <div className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${
-                                        selectedCategories.includes(category.id)
-                                            ? 'bg-primary border-primary text-primary-foreground'
-                                            : 'border-primary'
-                                    } ${isPending ? 'opacity-50' : ''}`}>
-                                        {selectedCategories.includes(category.id) && (
-                                            <Check className="h-3 w-3" />
-                                        )}
-                                    </div>
-                                    <span className={`${isPending ? 'opacity-50' : ''}`}>{category.name}</span>
-                                </div>
-                            ))}
-                        </div>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+                {/* Nom du budget */}
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nom du budget</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    {...field}
+                                    placeholder="Ex: Courses mensuelles" 
+                                    disabled={isPending} 
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                    Sélectionnez les catégories de dépenses à suivre
-                </p>
-            </div>
+                />
 
-            {/* Boutons */}
-            <div className="flex justify-end gap-2 pt-4">
-                <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={onClose}
-                    disabled={isPending}
-                >
-                    Annuler
-                </Button>
-                <Button 
-                    type="submit"
-                    disabled={isPending}
-                >
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isEditMode ? "Mettre à jour" : "Créer le budget"}
-                </Button>
-            </div>
-        </form>
+                {/* Montant alloué */}
+                <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Montant alloué</FormLabel>
+                            <FormControl>
+                                <Input
+                                    {...field}
+                                    type="number"
+                                    placeholder="Ex: 150"
+                                    step="0.01"
+                                    min="0"
+                                    disabled={isPending}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                Montant maximum que vous souhaitez dépenser
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* Période */}
+                <FormField
+                    control={form.control}
+                    name="period"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Période</FormLabel>
+                            <FormControl>
+                                <select 
+                                    {...field}
+                                    className="w-full p-2 border rounded"
+                                    disabled={isPending}
+                                >
+                                    <option value="MONTHLY">Mensuel</option>
+                                    <option value="YEARLY">Annuel</option>
+                                </select>
+                            </FormControl>
+                            <FormDescription>
+                                À quelle fréquence ce budget se renouvelle-t-il ?
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* Catégories */}
+                <FormField
+                    control={form.control}
+                    name="categoryIds"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Catégories</FormLabel>
+                            {isLoadingCategories ? (
+                                <div className="py-2 text-muted-foreground">Chargement...</div>
+                            ) : !categories || categories.length === 0 ? (
+                                <div className="py-2 text-muted-foreground">Aucune catégorie.</div>
+                            ) : (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 rounded-md border p-4 max-h-60 overflow-y-auto">
+                                    {categories.map((category) => (
+                                        <FormItem
+                                            key={category.id}
+                                            className="flex flex-row items-start space-x-3 space-y-0"
+                                        >
+                                            <FormControl>
+                                                <Checkbox
+                                                    checked={field.value?.includes(category.id)}
+                                                    onCheckedChange={(checked: boolean) => {
+                                                        const currentValue = field.value ?? [];
+                                                        if (checked) {
+                                                            field.onChange([...currentValue, category.id]);
+                                                        } else {
+                                                            field.onChange(currentValue.filter((id) => id !== category.id));
+                                                        }
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            <div className="space-y-1 leading-none">
+                                                <FormLabel className="font-normal cursor-pointer">
+                                                    {category.icon && <span className="mr-2">{category.icon}</span>}
+                                                    {category.name}
+                                                </FormLabel>
+                                            </div>
+                                        </FormItem>
+                                    ))}
+                                </div>
+                            )}
+                            <FormDescription>
+                                Sélectionnez les catégories de dépenses à suivre
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* Boutons */}
+                <div className="flex justify-end gap-2 pt-4">
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={onClose}
+                        disabled={isPending}
+                    >
+                        Annuler
+                    </Button>
+                    <Button 
+                        type="submit"
+                        disabled={isPending}
+                    >
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isEditMode ? "Mettre à jour" : "Créer le budget"}
+                    </Button>
+                </div>
+            </form>
+        </Form>
     );
 }

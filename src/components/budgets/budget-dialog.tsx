@@ -26,7 +26,7 @@ export function BudgetDialog(props: BudgetDialogProps) {
 
   return (
     <Dialog open={true} onOpenChange={(open) => { if (!open) props.onClose(); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {props.isEditing ? "Modifier le budget" : "Créer un nouveau budget"}

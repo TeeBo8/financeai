@@ -236,7 +236,7 @@ export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClient
             <SheetTrigger asChild>
               <Button>Nouveau Budget</Button>
             </SheetTrigger>
-            <SheetContent>
+            <SheetContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
               <SheetHeader>
                 <SheetTitle>Créer un nouveau budget</SheetTitle>
                 <SheetDescription>
