@@ -155,12 +155,12 @@ export const reportRouter = createTRPCRouter({
       z.object({
         startDate: z.date(),
         endDate: z.date(),
-        accountIds: z.array(z.string().uuid()).optional(), // Filtre optionnel par compte
+        accountId: z.string().optional(), // Accepte n'importe quelle chaîne de caractères
       })
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const { startDate, endDate, accountIds } = input;
+      const { startDate, endDate, accountId } = input;
 
       // S'assurer que endDate inclut toute la journée
       const adjustedEndDate = endOfDay(endDate);
@@ -168,8 +168,8 @@ export const reportRouter = createTRPCRouter({
       try {
         // --- Filtre commun pour les requêtes ---
         const baseConditions = [eq(transactions.userId, userId)];
-        if (accountIds && accountIds.length > 0) {
-          baseConditions.push(inArray(transactions.bankAccountId, accountIds));
+        if (accountId) { // Si un accountId est spécifié, on filtre par ce compte
+          baseConditions.push(eq(transactions.bankAccountId, accountId));
         }
 
         // 1. Solde initial avant startDate
