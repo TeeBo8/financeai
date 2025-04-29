@@ -137,21 +137,14 @@ export function CategoryForm({}: CategoryFormProps) {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Couleur (optionnel)</FormLabel>
-                            <div className="flex space-x-2">
-                                <FormControl>
-                                    <Input 
-                                        placeholder="Ex: #FF5733" 
-                                        {...field} 
-                                        value={field.value ?? ""} 
-                                    />
-                                </FormControl>
-                                {field.value && (
-                                    <div 
-                                        className="h-9 w-9 rounded-md border" 
-                                        style={{ backgroundColor: field.value || '#FFFFFF' }}
-                                    />
-                                )}
-                            </div>
+                            <FormControl>
+                                <Input
+                                    type="color"
+                                    {...field}
+                                    value={field.value ?? '#CCCCCC'}
+                                    className="p-0 h-10 w-14 cursor-pointer border-none"
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}

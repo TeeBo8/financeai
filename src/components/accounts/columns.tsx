@@ -83,7 +83,7 @@ export const columns: ColumnDef<AccountWithBalance>[] = [
       // Type explicite et conversion sûre
       const value = row.getValue("createdAt");
       // Si c'est une date ISO, cela fonctionne directement
-      return <div className="text-sm text-muted-foreground">
+      return <div className="hidden lg:table-cell text-sm text-muted-foreground">
         {format(new Date(value as string), "dd MMM yyyy", { locale: fr })}
       </div>;
     },
@@ -98,7 +98,7 @@ export const columns: ColumnDef<AccountWithBalance>[] = [
       // Type explicite et conversion sûre
       const value = row.getValue("updatedAt");
       // Vérifier si la valeur existe avant de formater
-      return <div className="text-sm text-muted-foreground">
+      return <div className="hidden lg:table-cell text-sm text-muted-foreground">
         {value ? format(new Date(value as string), "dd MMM yyyy", { locale: fr }) : "-"}
       </div>;
     },

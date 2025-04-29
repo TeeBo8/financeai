@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/server/auth";
 import { api } from "@/trpc/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ExpensesPieChart } from "@/components/reports/expenses-pie-chart";
+import { ExpensesBarChart } from "@/components/reports/expenses-bar-chart";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { MonthlySummaryChart } from "@/components/reports/monthly-summary-chart";
 import { BalanceHistoryChart } from "@/components/reports/balance-history-chart";
@@ -101,7 +101,7 @@ export default async function ReportsPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ExpensesPieChart data={expensesData} />
+            <ExpensesBarChart data={expensesData} />
           </CardContent>
         </Card>
 

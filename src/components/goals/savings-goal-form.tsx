@@ -150,16 +150,20 @@ export function SavingsGoalForm({ onSubmit, initialData, onSuccess, isPending }:
             <FormItem>
               <FormLabel>Couleur (optionnel)</FormLabel>
               <FormControl>
-                <Input type="text" placeholder="#A855F7" {...field} value={field.value ?? ''} />
+                <Input
+                  type="color"
+                  {...field}
+                  value={field.value ?? '#A855F7'}
+                  className="p-0 h-10 w-14 cursor-pointer border-none"
+                />
               </FormControl>
-              <FormDescription>Format hexadécimal: #RRGGBB</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
         <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? 'Sauvegarde...' : (initialData ? 'Mettre à jour' : 'Créer l&apos;objectif')}
+          {isPending ? 'Sauvegarde...' : (initialData ? 'Mettre à jour' : "Créer l'objectif")}
         </Button>
       </form>
     </Form>

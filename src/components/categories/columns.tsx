@@ -47,7 +47,7 @@ export const columns: ColumnDef<Category>[] = [
       const style = colorValue ? { backgroundColor: colorValue as string } : {};
       
       return colorValue ? (
-        <div className="flex justify-center">
+        <div className="hidden md:flex justify-center">
           <span
             className="inline-block h-2 w-8 rounded"
             style={style}
@@ -72,7 +72,7 @@ export const columns: ColumnDef<Category>[] = [
       const displayContent = iconValue ? String(iconValue) : "—";
       
       return (
-        <div className="text-center text-lg">
+        <div className="hidden md:table-cell text-center text-lg">
           {displayContent}
         </div>
       );
