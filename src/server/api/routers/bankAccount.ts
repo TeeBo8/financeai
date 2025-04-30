@@ -97,126 +97,112 @@ export const bankAccountRouter = createTRPCRouter({
         name: z.string().min(1, { message: "Le nom du compte est requis." }).max(256).optional(),
         icon: bankAccountInputSchema.shape.icon.optional(),
         color: bankAccountInputSchema.shape.color.optional(),
-        // autres champs à mettre à jour plus tard
       })
     )
     .mutation(async ({ ctx, input }) => {
       console.log("Updating bank account:", input.id, "for user:", ctx.session.user.id);
-      console.log("Input complet reçu:", input);
-      console.log("Champ icon:", input.icon, "Type:", typeof input.icon);
-      console.log("Champ color:", input.color, "Type:", typeof input.color);
       
       try {
+        // Vérifier d'abord si le compte existe et appartient à l'utilisateur
+        const existingAccount = await ctx.db.query.bankAccounts.findFirst({
+          where: and(
+            eq(bankAccounts.id, input.id),
+            eq(bankAccounts.userId, ctx.session.user.id)
+          )
+        });
+
+        if (!existingAccount) {
+          const accountExists = await ctx.db.query.bankAccounts.findFirst({ 
+            where: eq(bankAccounts.id, input.id) 
+          });
+          if (accountExists) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé à modifier ce compte.' });
+          } else {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
+          }
+        }
+
         // Extraire l'id et filtrer les champs à mettre à jour
         const { id, ...updateData } = input;
         
         // Filtrer les clés undefined pour n'envoyer que ce qui change
         const filteredUpdateData = Object.fromEntries(
-            Object.entries(updateData).filter(([, value]) => value !== undefined)
+          Object.entries(updateData).filter(([, value]) => value !== undefined)
         );
         
-        console.log("Données filtrées à enregistrer:", filteredUpdateData);
-        
-        // Si rien à mettre à jour, retourner le compte tel quel
+        // Si rien à mettre à jour, retourner le compte existant
         if (Object.keys(filteredUpdateData).length === 0) {
-            const existingAccount = await ctx.db.query.bankAccounts.findFirst({ 
-                where: and(
-                    eq(bankAccounts.id, id),
-                    eq(bankAccounts.userId, ctx.session.user.id)
-                )
-            });
-            if (!existingAccount) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
-            }
-            return existingAccount;
+          return existingAccount;
         }
         
         // Ajouter le timestamp de mise à jour
         const updatedData = {
-            ...filteredUpdateData,
-            updatedAt: new Date()
+          ...filteredUpdateData,
+          updatedAt: new Date()
         };
         
         const [updatedAccount] = await ctx.db
           .update(bankAccounts)
           .set(updatedData)
-          .where(
-            and(
-              eq(bankAccounts.id, id),
-              eq(bankAccounts.userId, ctx.session.user.id) // Sécurité: l'utilisateur ne peut modifier que ses propres comptes
-            )
-          )
+          .where(eq(bankAccounts.id, id))
           .returning();
 
         if (!updatedAccount) {
-            console.warn("Update attempt failed or account not found/not owned by user:", id);
-            // On vérifie si le compte existe mais n'appartient pas à l'user
-            const accountExists = await ctx.db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, id) });
-            if (accountExists) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé à modifier ce compte.' });
-            } else {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
-            }
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la mise à jour du compte.' });
         }
 
         console.log("Bank account updated successfully:", updatedAccount);
         return updatedAccount;
 
       } catch (error) {
-          // Gérer les erreurs spécifiques de tRPC différemment des erreurs générales
-          if (error instanceof TRPCError) throw error;
-          console.error("Error updating bank account:", error);
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la mise à jour du compte bancaire.' });
+        if (error instanceof TRPCError) throw error;
+        console.error("Error updating bank account:", error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la mise à jour du compte bancaire.' });
       }
     }),
 
   // == DELETE ==
   delete: protectedProcedure
-    .input(z.object({ id: z.string().min(1) })) // On a besoin juste de l'ID
+    .input(z.object({ id: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       console.log("Deleting bank account:", input.id, "for user:", ctx.session.user.id);
 
-      // Vérifier si le compte appartient bien à l'utilisateur AVANT de supprimer
-      const accountToDelete = await ctx.db.query.bankAccounts.findFirst({
-          where: and(
-              eq(bankAccounts.id, input.id),
-              eq(bankAccounts.userId, ctx.session.user.id)
-          )
-      });
-
-      if (!accountToDelete) {
-          console.warn("Delete attempt failed: account not found or not owned by user:", input.id);
-          const accountExists = await ctx.db.query.bankAccounts.findFirst({ where: eq(bankAccounts.id, input.id) });
-          if (accountExists) {
-              throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé à supprimer ce compte.' });
-          } else {
-              throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
-          }
-      }
-
-      // Rappel: La suppression d'un compte entraîne la suppression en cascade des transactions associées
-      // (grâce à onDelete: "cascade" dans le schéma)
       try {
-          const [deletedAccount] = await ctx.db
-              .delete(bankAccounts)
-              .where(eq(bankAccounts.id, input.id)) // On a déjà vérifié la propriété, donc juste l'ID suffit ici
-              .returning({ id: bankAccounts.id }); // On retourne juste l'ID pour confirmer
+        // Vérifier d'abord si le compte existe et appartient à l'utilisateur
+        const accountToDelete = await ctx.db.query.bankAccounts.findFirst({
+          where: and(
+            eq(bankAccounts.id, input.id),
+            eq(bankAccounts.userId, ctx.session.user.id)
+          )
+        });
 
-          if (!deletedAccount) {
-              // Ne devrait pas arriver si la vérification précédente a réussi, mais sécurité
-              console.error("Deletion failed unexpectedly after ownership check for account:", input.id);
-              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'La suppression a échoué de manière inattendue.' });
+        if (!accountToDelete) {
+          const accountExists = await ctx.db.query.bankAccounts.findFirst({ 
+            where: eq(bankAccounts.id, input.id) 
+          });
+          if (accountExists) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé à supprimer ce compte.' });
+          } else {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Compte bancaire non trouvé.' });
           }
+        }
 
-          console.log("Bank account deleted successfully:", deletedAccount.id);
-          return deletedAccount; // Retourne { id: "id_supprimé" }
+        const [deletedAccount] = await ctx.db
+          .delete(bankAccounts)
+          .where(eq(bankAccounts.id, input.id))
+          .returning();
+
+        if (!deletedAccount) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la suppression du compte.' });
+        }
+
+        console.log("Bank account deleted successfully:", deletedAccount);
+        return deletedAccount;
 
       } catch (error) {
-           // Gérer les erreurs spécifiques de tRPC différemment des erreurs générales
-           if (error instanceof TRPCError) throw error;
-           console.error("Error deleting bank account:", error);
-           // Possible erreur si des contraintes autres que celles gérées par cascade existent
-           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la suppression du compte bancaire.' });
+        if (error instanceof TRPCError) throw error;
+        console.error("Error deleting bank account:", error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la suppression du compte bancaire.' });
       }
     }),
 }); 
