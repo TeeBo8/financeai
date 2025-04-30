@@ -11,15 +11,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { ExpensesBarChart } from "@/components/reports/expenses-bar-chart";
 import { MonthlySummaryChart } from "@/components/reports/monthly-summary-chart";
 import { BalanceHistoryChart } from "@/components/reports/balance-history-chart";
 import { NetCashFlowChart } from "@/components/reports/net-cash-flow-chart";
 import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useSearchParams } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 export function ReportsClient() {
   const searchParams = useSearchParams();
+  
+  // États pour l'analyse IA
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // Récupérer les dates des searchParams ou utiliser des valeurs par défaut
   const fromParam = searchParams.get('from');
@@ -51,6 +58,66 @@ export function ReportsClient() {
 
   const { data: accounts, isLoading: isLoadingAccounts } = api.bankAccount.getAll.useQuery();
 
+  const handleAnalyzeReports = async () => {
+    setIsAnalyzing(true);
+    setAiSummary(null);
+    
+    try {
+      // Vérifier que nous avons les données nécessaires
+      if (!monthlySummaries || !expensesData) {
+        throw new Error("Données manquantes pour l'analyse");
+      }
+
+      // Calculer les totaux pour la période sélectionnée
+      const totalIncome = monthlySummaries.reduce((sum, month) => sum + (month.Revenus || 0), 0);
+      const totalExpenses = monthlySummaries.reduce((sum, month) => sum + (month.Dépenses || 0), 0);
+      const netFlow = totalIncome - totalExpenses;
+
+      // Extraire les catégories de dépenses principales (top 3)
+      const topExpenseCategories = expensesData
+        .sort((a, b) => b.totalExpenses - a.totalExpenses)
+        .slice(0, 3)
+        .map(category => ({
+          name: category.categoryName,
+          amount: category.totalExpenses
+        }));
+
+      // Appeler l'API
+      const response = await fetch('/api/ai/analyze-reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          totalIncome,
+          totalExpenses,
+          netFlow,
+          topExpenseCategories,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erreur API: ${errorText}`);
+      }
+
+      const result = await response.json();
+      setAiSummary(result.summary);
+
+    } catch (error) {
+      console.error("Erreur lors de l'analyse des rapports:", error);
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : "Une erreur est survenue lors de l'analyse des rapports"
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -61,6 +128,39 @@ export function ReportsClient() {
           Analysez vos finances avec des visualisations détaillées.
         </p>
       </div>
+
+      {/* Bouton d'analyse IA */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleAnalyzeReports}
+          disabled={isAnalyzing}
+          className="flex items-center gap-2"
+        >
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Analyse en cours...
+            </>
+          ) : (
+            "✨ Analyser mes rapports"
+          )}
+        </Button>
+      </div>
+
+      {/* Résultat de l'analyse IA */}
+      {aiSummary && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Analyse IA de vos rapports</CardTitle>
+            <CardDescription>
+              Résumé intelligent de votre situation financière
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap">{aiSummary}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filtre de date */}
       <div className="flex justify-end">
