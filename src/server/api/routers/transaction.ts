@@ -43,46 +43,39 @@ export const transactionRouter = createTRPCRouter({
       dateTo: z.date().optional(),
       categoryId: z.string().optional(),
       bankAccountId: z.string().optional(),
-      description: z.string().optional(), // Ajout: pour la recherche textuelle (q)
-      type: z.enum(['all', 'income', 'expense']).optional().default('all'), // Ajout: type de transaction
-    }).optional()) // Rendre l'objet input optionnel si aucun filtre n'est appliqué
+      description: z.string().optional(),
+      type: z.enum(['all', 'income', 'expense']).optional().default('all'),
+    }).optional())
     .query(async ({ ctx, input }) => {
-      // ctx.session.user.id contient l'ID de l'utilisateur authentifié
       const userId = ctx.session.user.id;
 
-      console.log(`Fetching transactions for user: ${userId}`, "with filters:", input); // Pour le débogage
+      console.log(`Fetching transactions for user: ${userId}`, "with filters:", input);
 
       const whereClauses = [eq(schema.transactions.userId, userId)];
       
-      // Filtres existants
       if (input?.dateFrom) {
         whereClauses.push(gte(schema.transactions.date, input.dateFrom));
       }
       if (input?.dateTo) {
-        // Pour inclure la journée entière de dateTo
         const dateToPlusOneDay = new Date(input.dateTo);
         dateToPlusOneDay.setDate(dateToPlusOneDay.getDate() + 1);
         whereClauses.push(lte(schema.transactions.date, dateToPlusOneDay));
       }
       if (input?.categoryId) {
-        // Gérer le cas "aucune catégorie"
         if (input.categoryId === 'none') {
           whereClauses.push(sql`${schema.transactions.categoryId} IS NULL`);
         } else {
           whereClauses.push(eq(schema.transactions.categoryId, input.categoryId));
         }
       }
-      if (input?.bankAccountId && input.bankAccountId !== 'all') { // Vérifie aussi qu'on ne filtre pas pour "tous"
+      if (input?.bankAccountId && input.bankAccountId !== 'all') {
         whereClauses.push(eq(schema.transactions.bankAccountId, input.bankAccountId));
       }
       
-      // Nouveaux filtres
       if (input?.description && input.description.trim() !== '') {
-        // Recherche textuelle (insensible à la casse)
         whereClauses.push(like(schema.transactions.description, `%${input.description}%`));
       }
       
-      // Filtre par type (revenus/dépenses)
       if (input?.type === 'income') {
         whereClauses.push(gte(schema.transactions.amount, '0'));
       } else if (input?.type === 'expense') {
@@ -90,26 +83,23 @@ export const transactionRouter = createTRPCRouter({
       }
 
       try {
-        // Utilise Drizzle pour requêter la base de données
         const userTransactions = await db.query.transactions.findMany({
-          // Condition : ne récupérer que les transactions où userId correspond
           where: and(...whereClauses),
-          // Trier les transactions par date, les plus récentes en premier
           orderBy: [desc(schema.transactions.date), desc(schema.transactions.createdAt)],
-          // Inclure les données de la catégorie associée (grâce aux relations définies)
           with: {
-            category: true, // Récupère les champs de la table categories liée
+            category: true,
             bankAccount: {
               columns: {
                 name: true,
+                icon: true,
+                color: true,
               }
             }
           },
         });
 
-        console.log(`Found ${userTransactions.length} transactions`); // Pour le débogage
+        console.log(`Found ${userTransactions.length} transactions`);
 
-        // Retourne la liste des transactions trouvées
         return userTransactions;
       } catch (error) {
         console.error("Error fetching transactions:", error);
