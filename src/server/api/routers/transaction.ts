@@ -48,6 +48,7 @@ export const transactionRouter = createTRPCRouter({
     }).optional())
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      const dbClient = (ctx as any).db ?? db;
 
       console.log(`Fetching transactions for user: ${userId}`, "with filters:", input);
 
@@ -83,7 +84,7 @@ export const transactionRouter = createTRPCRouter({
       }
 
       try {
-        const userTransactions = await db.query.transactions.findMany({
+        const userTransactions = await dbClient.query.transactions.findMany({
           where: and(...whereClauses),
           orderBy: [desc(schema.transactions.date), desc(schema.transactions.createdAt)],
           with: {
@@ -115,76 +116,76 @@ export const transactionRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createTransactionSchema)
     .mutation(async ({ ctx, input }) => {
-      // Récupérer l'ID de l'utilisateur connecté
       const userId = ctx.session.user.id;
-      
-      console.log("Attempting to create transaction for user:", userId);
-      console.log("Input data:", input);
-      
-      // Vérifier que le compte bancaire appartient à l'utilisateur
-      const bankAccountExists = await db.query.bankAccounts.findFirst({
-        where: and(
-          eq(schema.bankAccounts.id, input.bankAccountId),
-          eq(schema.bankAccounts.userId, userId)
-        ),
-        columns: { id: true } // On a juste besoin de savoir s'il existe
-      });
+      const dbClient = (ctx as any).db ?? db;
+      console.log("[TEST_LOG] Create Start:", { userId, input }); // Log 1
 
-      if (!bankAccountExists) {
-        console.error("Bank account not found or not owned by user:", input.bankAccountId);
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Compte bancaire invalide ou non autorisé.' });
-      }
-
-      // Vérifier aussi la catégorie si fournie
-      if (input.categoryId) {
-        const categoryExists = await db.query.categories.findFirst({
+      try {
+        // Vérifier que le compte bancaire appartient à l'utilisateur
+        const bankAccountExists = await dbClient.query.bankAccounts.findFirst({
           where: and(
-            eq(schema.categories.id, input.categoryId),
-            eq(schema.categories.userId, userId)
+            eq(schema.bankAccounts.id, input.bankAccountId),
+            eq(schema.bankAccounts.userId, userId)
           ),
           columns: { id: true }
         });
-        if (!categoryExists) {
-          console.error("Category not found or not owned by user:", input.categoryId);
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Catégorie invalide ou non autorisée.' });
+        console.log("[TEST_LOG] Bank Account Check Done"); // Log 2
+
+        if (!bankAccountExists) {
+          console.error("Bank account not found or not owned by user:", input.bankAccountId);
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Compte bancaire invalide ou non autorisé.' });
         }
-      }
-      
-      try {
-        // Insérer la nouvelle transaction dans la base de données
-        const result = await db.insert(schema.transactions).values({
-          amount: input.amount.toString(), // Convertir en string pour numeric dans la BDD
+
+        // Vérifier aussi la catégorie si fournie
+        if (input.categoryId) {
+          console.log("[TEST_LOG] Checking Category:", input.categoryId); // Log 3
+          const categoryExists = await dbClient.query.categories.findFirst({
+            where: and(
+              eq(schema.categories.id, input.categoryId),
+              eq(schema.categories.userId, userId)
+            ),
+            columns: { id: true }
+          });
+          console.log("[TEST_LOG] Category Check Result:", categoryExists); // Log 4
+          if (!categoryExists) {
+            console.error("Category not found or not owned by user:", input.categoryId);
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Catégorie invalide ou non autorisée.' });
+          }
+        }
+        
+        console.log("[TEST_LOG] Attempting DB Insert..."); // Log 5
+        const result = await dbClient.insert(schema.transactions).values({
+          amount: input.amount.toString(),
           description: input.description,
           date: input.date,
           userId: userId,
           categoryId: input.categoryId,
           bankAccountId: input.bankAccountId,
         }).returning();
+        console.log("[TEST_LOG] DB Insert Result:", result); // Log 6
         
-        // Vérifier si nous avons bien reçu une transaction
         if (!result || result.length === 0) {
+          console.log("[TEST_LOG] Insert returned empty/null"); // Log 7
           throw new Error("Échec de la création de transaction");
         }
         
-        // On a vérifié que result contient au moins un élément, donc result[0] existe
         const newTransaction = result[0]!;
-        console.log("Transaction created successfully:", newTransaction);
         
         // ----- IMPORTANT : Invalidation du cache -----
-        // Invalider le cache des routes affectées par cette mutation
-        revalidatePath("/dashboard"); // Invalide le cache pour la page dashboard
-        revalidatePath("/transactions"); // Invalide aussi la page des transactions
-        revalidatePath("/accounts"); // Invalide la page des comptes (soldes)
-        revalidatePath("/reports"); // Invalide la page des rapports
+        revalidatePath("/dashboard");
+        revalidatePath("/transactions");
+        revalidatePath("/accounts");
+        revalidatePath("/reports");
         
-        // Si une catégorie est spécifiée, récupérer ses détails
         if (newTransaction.categoryId) {
-          const category = await db.query.categories.findFirst({
+          console.log("[TEST_LOG] Fetching Category Details Post-Insert:", newTransaction.categoryId); // Log 8
+          const category = await dbClient.query.categories.findFirst({
             where: eq(schema.categories.id, newTransaction.categoryId)
           });
+          console.log("[TEST_LOG] Category Details Result:", category); // Log 9
           
           if (category) {
-            // Retourner la transaction avec sa catégorie
+            console.log("[TEST_LOG] Create Success - Returning with Category:", { newTransaction, category }); // Log 10
             return {
               ...newTransaction,
               category: category,
@@ -192,12 +193,21 @@ export const transactionRouter = createTRPCRouter({
           }
         }
         
-        // Sinon, retourner juste la transaction
+        console.log("[TEST_LOG] Create Success - Returning:", newTransaction); // Log 10
         return newTransaction;
       } catch (error) {
-        console.error("Failed to create transaction:", error);
-        // Relance l'erreur pour que tRPC la gère et informe le client
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erreur lors de la création de la transaction.' });
+        // Assurer la propagation correcte des erreurs métier déjà formatées
+        if (error instanceof TRPCError) {
+          // On propage telle quelle si c'est déjà une erreur TRPC métier (BAD_REQUEST, NOT_FOUND, etc.)
+          throw error;
+        }
+
+        // Journaliser l'erreur inattendue pour le debug, puis renvoyer une erreur serveur générique côté client
+        console.error("[TEST_LOG] Unexpected error in Create:", error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Erreur lors de la création de la transaction.',
+        });
       }
     }),
 
@@ -216,28 +226,38 @@ export const transactionRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const transactionIdToDelete = input.id;
 
+      // Permet l'injection d'une base de données mockée dans les tests
+      const dbClient = (ctx as any).db ?? db;
+
       console.log(`User ${userId} attempting to delete transaction ${transactionIdToDelete}`);
 
       try {
-        // Suppression avec vérification d'appartenance
-        const deleteResult = await db
-          .delete(schema.transactions)
-          .where(
-            and(
-              eq(schema.transactions.id, transactionIdToDelete),
-              eq(schema.transactions.userId, userId) // <-- Sécurité !
-            )
+        // Vérifier d'abord si la transaction existe et appartient à l'utilisateur
+        const existingTransaction = await dbClient.query.transactions.findFirst({
+          where: and(
+            eq(schema.transactions.id, transactionIdToDelete),
+            eq(schema.transactions.userId, userId)
           )
-          .returning({ deletedId: schema.transactions.id });
+        });
 
-        // Vérifier si la suppression a eu lieu
-        if (deleteResult.length === 0) {
+        if (!existingTransaction) {
           console.warn(`Transaction ${transactionIdToDelete} not found for user ${userId} or permission denied.`);
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: "La transaction que vous essayez de supprimer n'a pas été trouvée ou ne vous appartient pas.",
           });
         }
+
+        // Suppression avec vérification d'appartenance
+        const deleteResult = await dbClient
+          .delete(schema.transactions)
+          .where(
+            and(
+              eq(schema.transactions.id, transactionIdToDelete),
+              eq(schema.transactions.userId, userId)
+            )
+          )
+          .returning({ deletedId: schema.transactions.id });
 
         console.log(`Transaction ${deleteResult[0]?.deletedId} successfully deleted by user ${userId}.`);
 
@@ -275,13 +295,14 @@ export const transactionRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      const dbClient = (ctx as any).db ?? db;
       const { id: transactionId, ...updateData } = input; // Sépare l'ID
 
       console.log(`User ${userId} attempting to update transaction ${transactionId}`);
       console.log("Update data:", updateData);
       
       // 1. Trouver la transaction existante pour vérifier la propriété et obtenir l'ancien montant/catégorie
-      const existingTransaction = await db.query.transactions.findFirst({
+      const existingTransaction = await dbClient.query.transactions.findFirst({
         where: and(eq(schema.transactions.id, transactionId), eq(schema.transactions.userId, userId))
       });
 
@@ -289,9 +310,15 @@ export const transactionRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Transaction non trouvée ou non autorisée.' });
       }
 
+      // Sécurité supplémentaire : s'assurer que la transaction appartient bien à l'utilisateur connecté
+      if (existingTransaction.userId !== userId) {
+        // On renvoie la même erreur que si la transaction n'existait pas pour éviter de révéler l'existence d'une ressource tierce
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Transaction non trouvée ou non autorisée.' });
+      }
+
       // 2. Vérifier le nouveau bankAccountId s'il est fourni
       if (updateData.bankAccountId && updateData.bankAccountId !== existingTransaction.bankAccountId) {
-        const bankAccountExists = await db.query.bankAccounts.findFirst({
+        const bankAccountExists = await dbClient.query.bankAccounts.findFirst({
           where: and(
             eq(schema.bankAccounts.id, updateData.bankAccountId),
             eq(schema.bankAccounts.userId, userId)
@@ -306,7 +333,7 @@ export const transactionRouter = createTRPCRouter({
       // 3. Vérifier la nouvelle categoryId si fournie
       if (updateData.categoryId !== undefined && updateData.categoryId !== existingTransaction.categoryId) {
         if (updateData.categoryId !== null) { // Si ce n'est pas null, vérifier l'existence et la propriété
-          const categoryExists = await db.query.categories.findFirst({
+          const categoryExists = await dbClient.query.categories.findFirst({
             where: and(
               eq(schema.categories.id, updateData.categoryId),
               eq(schema.categories.userId, userId)
@@ -331,7 +358,7 @@ export const transactionRouter = createTRPCRouter({
         dataToSet.updatedAt = new Date();
 
         // Mise à jour DB
-        const updatedTransactions = await db
+        const updatedTransactions = await dbClient
           .update(schema.transactions)
           .set(dataToSet)
           .where(
@@ -362,7 +389,7 @@ export const transactionRouter = createTRPCRouter({
 
         // Si une catégorie est spécifiée dans la transaction mise à jour, la récupérer
         if (updatedTransaction?.categoryId) {
-          const category = await db.query.categories.findFirst({
+          const category = await dbClient.query.categories.findFirst({
             where: eq(schema.categories.id, updatedTransaction.categoryId)
           });
           
@@ -384,7 +411,7 @@ export const transactionRouter = createTRPCRouter({
         console.error(`Failed to update transaction ${transactionId} for user ${userId}:`, error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Une erreur est survenue lors de la mise à jour de la transaction.',
+          message: 'Erreur lors de la mise à jour de la transaction.',
           cause: error,
         });
       }
@@ -415,12 +442,15 @@ export const transactionRouter = createTRPCRouter({
       // Génère un ID unique pour lier les deux transactions du transfert
       const transferId = `tf_${crypto.randomUUID()}`; // Utilise crypto.randomUUID() natif
 
+      const dbClient = (ctx as any).db ?? db;
+
       console.log(`Creating transfer for user: ${userId}, From: ${fromAccountId}, To: ${toAccountId}, Amount: ${transferAmount}, TransferID: ${transferId}`);
 
       // Utilisation d'une transaction de base de données pour assurer l'atomicité
       // Si l'une des insertions échoue, l'autre sera annulée (rollback)
       try {
-        await db.transaction(async (tx) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await dbClient.transaction(async (tx: any) => {
           // 1. Vérifier que les deux comptes appartiennent à l'utilisateur
           const accounts = await tx.select({ id: bankAccounts.id })
             .from(bankAccounts)
@@ -433,8 +463,10 @@ export const transactionRouter = createTRPCRouter({
            if (accounts.length !== 2) {
                console.error("One or both accounts not found or not owned by user.", { fromAccountId, toAccountId, found: accounts });
                // Essayer de donner un message plus précis
-               const fromExists = accounts.some(a => a.id === fromAccountId);
-               const toExists = accounts.some(a => a.id === toAccountId);
+               // eslint-disable-next-line @typescript-eslint/no-explicit-any
+               const fromExists = accounts.some((a: any) => a.id === fromAccountId);
+               // eslint-disable-next-line @typescript-eslint/no-explicit-any
+               const toExists = accounts.some((a: any) => a.id === toAccountId);
                let message = "Compte(s) invalide(s) ou non autorisé(s).";
                if (!fromExists && !toExists) message = "Comptes source et destination invalides.";
                else if (!fromExists) message = "Compte source invalide.";
