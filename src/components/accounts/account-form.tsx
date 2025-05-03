@@ -19,14 +19,17 @@ import { toast } from "sonner";
 import { accountFormSchema, type AccountFormValues } from "@/lib/schemas/account-schema";
 import { useAccountDialogStore, defaultAccountFormValues } from "@/stores/useAccountDialogStore";
 import { Loader2 } from 'lucide-react'; // Pour l'indicateur de chargement
-import { z } from "zod";
-import { type RouterOutputs } from "@/trpc/shared";
 
 // Pas besoin de props complexes ici, on lira depuis le store
 interface AccountFormProps {
   // On pourrait ajouter une prop onSuccess si on veut une action spécifique
   // après succès, mais la fermeture est déjà gérée par la mutation/store.
-  accountToEdit?: any;
+  accountToEdit?: {
+    id: string;
+    name: string;
+    icon?: string | null;
+    color?: string | null;
+  };
   onFormSubmit?: () => void;
 }
 
@@ -60,51 +63,36 @@ export function AccountForm({}: AccountFormProps) {
     }, [isEditing, accountToEdit, form]);
 
     // --- Mutations ---
-    const createAccount = api.bankAccount.create.useMutation({
-        onSuccess: (newAccount) => {
-            toast.success(`Compte "${newAccount.name}" créé avec succès !`);
-            void utils.bankAccount.getAll.invalidate(); // Rafraîchir la liste
-            void utils.dashboard.getTotalBalance.invalidate(); // Mettre à jour solde total
-            form.reset(defaultAccountFormValues); // Reset pour une éventuelle nouvelle saisie
-            closeDialog();
-        },
-        onError: (error) => {
-            toast.error(`Erreur création : ${error.message}`);
-        },
-    });
-
-    const updateAccount = api.bankAccount.update.useMutation({
+    const { mutate: createAccount, isPending: isCreating } = api.bankAccount.create.useMutation({
         onSuccess: () => {
-            toast.success("Compte mis à jour avec succès !");
+            toast.success("Compte créé avec succès");
             void utils.bankAccount.getAll.invalidate();
-            // Pas besoin d'invalider getTotalBalance si seul le nom change
             closeDialog();
         },
         onError: (error) => {
-            toast.error(`Erreur mise à jour : ${error.message}`);
+            toast.error(error.message);
         },
     });
 
-    const mutation = isEditing ? updateAccount : createAccount;
-    const { isPending } = mutation;
+    const { mutate: updateAccount, isPending: isUpdating } = api.bankAccount.update.useMutation({
+        onSuccess: () => {
+            toast.success("Compte mis à jour avec succès");
+            void utils.bankAccount.getAll.invalidate();
+            closeDialog();
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        },
+    });
 
-    // Fonction de soumission
     function onSubmit(data: AccountFormValues) {
-        // Traitement des données pour l'API
-        const submitData = {
-            ...data,
-            // S'assurer que les valeurs vides sont bien gérées
-            icon: data.icon || undefined,
-            color: data.color === "#000000" ? undefined : data.color
-        };
-        
         if (isEditing && accountToEdit) {
-            updateAccount.mutate({
+            updateAccount({
                 id: accountToEdit.id,
-                ...submitData,
+                ...data,
             });
         } else {
-            createAccount.mutate(submitData);
+            createAccount(data);
         }
     }
 
@@ -169,11 +157,11 @@ export function AccountForm({}: AccountFormProps) {
 
                 {/* Boutons d'action */}
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={closeDialog} disabled={isPending}>
+                    <Button type="button" variant="outline" onClick={closeDialog} disabled={isCreating || isUpdating}>
                         Annuler
                     </Button>
-                    <Button type="submit" disabled={isPending}>
-                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" disabled={isCreating || isUpdating}>
+                        {isCreating || isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isEditing ? "Mettre à jour" : "Créer le compte"}
                     </Button>
                 </div>

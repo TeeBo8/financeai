@@ -2,12 +2,11 @@
 
 import { Suspense } from "react";
 import { api } from "@/trpc/react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import BudgetsClient from "./budgets-client";
 
 export default function BudgetsPage() {
   // Extraire les données du budget à l'aide de tRPC
-  const { data: budgets = [], error, isLoading } = api.budget.getAll.useQuery();
+  const { data: budgets = [] } = api.budget.getAll.useQuery();
 
   return (
     <div className="container py-6 space-y-6">

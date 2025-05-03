@@ -21,7 +21,12 @@ import { Loader2 } from 'lucide-react';
 
 interface CategoryFormProps {
   // Pas de props nécessaires, on utilise le store
-  initialData?: any;
+  initialData?: {
+    id: string;
+    name: string;
+    icon?: string | null;
+    color?: string | null;
+  };
   onFormSubmit?: () => void;
 }
 
@@ -55,45 +60,36 @@ export function CategoryForm({}: CategoryFormProps) {
     }, [isEditing, categoryToEdit, form]);
 
     // --- Mutations ---
-    const createCategory = api.category.create.useMutation({
-        onSuccess: (data) => {
-            toast.success(`Catégorie "${data?.name || 'nouvelle'}" créée avec succès !`);
-            void utils.category.getAll.invalidate();
-            form.reset(defaultCategoryFormValues);
-            closeDialog();
-        },
-        onError: (error) => {
-            toast.error(`Erreur création : ${error.message}`);
-        },
-    });
-
-    const updateCategory = api.category.update.useMutation({
+    const { mutate: createCategory, isPending: isCreating } = api.category.create.useMutation({
         onSuccess: () => {
-            toast.success("Catégorie mise à jour avec succès !");
+            toast.success("Catégorie créée avec succès");
             void utils.category.getAll.invalidate();
             closeDialog();
         },
         onError: (error) => {
-            toast.error(`Erreur mise à jour : ${error.message}`);
+            toast.error(error.message);
         },
     });
 
-    const mutation = isEditing ? updateCategory : createCategory;
-    const { isPending } = mutation;
+    const { mutate: updateCategory, isPending: isUpdating } = api.category.update.useMutation({
+        onSuccess: () => {
+            toast.success("Catégorie mise à jour avec succès");
+            void utils.category.getAll.invalidate();
+            closeDialog();
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        },
+    });
 
-    // Fonction de soumission
     function onSubmit(data: CategoryFormValues) {
-        console.log("Soumission formulaire catégorie:", data);
         if (isEditing && categoryToEdit) {
-            // N'envoyer que les données qui ont potentiellement changé + l'ID
-            updateCategory.mutate({
+            updateCategory({
                 id: categoryToEdit.id,
-                name: data.name,
-                icon: data.icon,
-                color: data.color,
+                ...data,
             });
         } else {
-            createCategory.mutate(data);
+            createCategory(data);
         }
     }
 
@@ -152,11 +148,11 @@ export function CategoryForm({}: CategoryFormProps) {
 
                 {/* Boutons d'action */}
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={closeDialog} disabled={isPending}>
+                    <Button type="button" variant="outline" onClick={closeDialog} disabled={isCreating || isUpdating}>
                         Annuler
                     </Button>
-                    <Button type="submit" disabled={isPending}>
-                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" disabled={isCreating || isUpdating}>
+                        {isCreating || isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isEditing ? "Mettre à jour" : "Créer la catégorie"}
                     </Button>
                 </div>

@@ -1,16 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { MockedFunction } from 'vitest';
-import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { appRouter } from '@/server/api/root';
 import { db } from '@/server/db';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { createTRPCContext } from '@/server/api/trpc';
 import type { inferAsyncReturnType } from '@trpc/server';
-import { type Sql } from 'postgres';
-import * as schema from '@/server/db/schema';
-import { mockDeep } from 'vitest-mock-extended';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { eq, desc, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+
+interface MockDb {
+  query: {
+    transactions: {
+      findMany: ReturnType<typeof vi.fn>;
+      findFirst: ReturnType<typeof vi.fn>;
+    };
+    bankAccounts: {
+      findFirst: ReturnType<typeof vi.fn>;
+    };
+    categories: {
+      findFirst: ReturnType<typeof vi.fn>;
+    };
+  };
+  insert: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+}
 
 describe('Transaction Router Tests', () => {
   const mockSession = { 
@@ -18,7 +31,7 @@ describe('Transaction Router Tests', () => {
     expires: 'never',
   } as const;
 
-  let mockDb: any;
+  let mockDb: MockDb;
   let ctx: inferAsyncReturnType<typeof createTRPCContext>;
   let caller: ReturnType<typeof appRouter.createCaller>;
 
@@ -349,6 +362,7 @@ describe('Transaction Router Tests', () => {
       expect(mockDb.query.transactions.findMany).toHaveBeenCalledTimes(1);
       expect(result).toEqual(expectedFilteredTransactions);
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every((tx: any) => parseFloat(tx.amount) < 0)).toBe(true);
     });
 
@@ -485,6 +499,7 @@ describe('Transaction Router Tests', () => {
       expect(mockDb.query.transactions.findMany).toHaveBeenCalledTimes(1);
       expect(result).toEqual(expectedFilteredTransactions);
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every((tx: any) => tx.description.toLowerCase().includes('restaurant'))).toBe(true);
     });
 
@@ -593,6 +608,7 @@ describe('Transaction Router Tests', () => {
       expect(mockDb.query.transactions.findMany).toHaveBeenCalledTimes(1);
       expect(result).toEqual(expectedFilteredTransactions);
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every((tx: any) => tx.categoryId === targetCategoryId)).toBe(true);
     });
 
@@ -701,6 +717,7 @@ describe('Transaction Router Tests', () => {
       expect(mockDb.query.transactions.findMany).toHaveBeenCalledTimes(1);
       expect(result).toEqual(expectedFilteredTransactions);
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every((tx: any) => tx.bankAccountId === targetAccountId)).toBe(true);
     });
   });
@@ -790,6 +807,7 @@ describe('Transaction Router Tests', () => {
       };
 
       // Act & Assert
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await expect(caller.transaction.create(invalidInput as any)).rejects.toThrow(TRPCError);
       expect(mockDb.insert).not.toHaveBeenCalled();
     });
@@ -995,6 +1013,7 @@ describe('Transaction Router Tests', () => {
       };
 
       // Act & Assert
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await expect(caller.transaction.update(invalidInput as any)).rejects.toThrow(TRPCError);
       expect(mockDb.query.transactions.findFirst).not.toHaveBeenCalled();
       expect(mockDb.update).not.toHaveBeenCalled();

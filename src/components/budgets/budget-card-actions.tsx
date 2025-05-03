@@ -17,14 +17,20 @@ import {
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 
-// Type simplifié pour le budget
+// Type pour le budget
+interface Budget {
+  id: string;
+  name: string;
+  amount: number | string;
+  period: string;
+  spentAmount: number | string;
+  [key: string]: string | number | undefined;
+}
+
+// Props pour le composant
 interface BudgetCardActionsProps {
-  budget: {
-    id: string;
-    name: string;
-    [key: string]: any;
-  };
-  onEdit: (budget: any) => void;
+  budget: Budget;
+  onEdit: (budget: Budget) => void;
 }
 
 export function BudgetCardActions({ budget, onEdit }: BudgetCardActionsProps) {

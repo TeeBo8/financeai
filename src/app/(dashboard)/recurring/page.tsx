@@ -1,6 +1,4 @@
-import { Suspense } from "react";
 import { api } from "@/trpc/server";
-import { PageHeader } from "@/components/ui/page-header";
 import RecurringPageClient from "./recurring-page-client";
 // Importer un Skeleton pour le DataTable (à créer si besoin)
 // import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";

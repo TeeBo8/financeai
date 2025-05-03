@@ -1,28 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { type InferSelectModel, and, eq } from 'drizzle-orm'; 
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as schema from '@/server/db/schema';
-import { pgTable, text, varchar, timestamp } from 'drizzle-orm/pg-core';
 import { mockDeep } from 'vitest-mock-extended';
 import { type Session } from 'next-auth';
-import { 
-  mockCategoryUpdate,
-  mockCategoryUpdateSet,
-  mockCategoryUpdateWhere,
-  mockCategoryUpdateReturning 
-} from './__mocks__/category.mocks';
 import { appRouter } from "@/server/api/root";
-import { createTRPCContext } from '../trpc';
-import { categoryRouter } from "@/server/api/routers/category";
-import { env } from "@/env";
-import { createCaller } from '../root';
 import { type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { type Sql } from 'postgres';
 
-// Définir le type Category basé sur le schéma
-type Category = InferSelectModel<typeof schema.categories>;
-
 // --- Mock de la Base de Données (Drizzle) ---
-type MockDbType = PostgresJsDatabase<typeof schema> & { $client: Sql<{}> };
+type MockDbType = PostgresJsDatabase<typeof schema> & { $client: Sql };
 const mockDb = mockDeep<MockDbType>();
 
 // Variables de test
@@ -48,17 +33,6 @@ const caller = appRouter.createCaller(mockCtx);
 
 // --- Tests pour le routeur 'category' ---
 describe('Category Router', () => {
-  const ctx = {
-    session: {
-      user: {
-        id: 'user_test_123',
-        name: 'Test User',
-        email: 'test@example.com',
-      },
-      expires: new Date(Date.now() + 86400 * 1000).toISOString(),
-    },
-  } as any;
-
   beforeEach(() => {
     vi.clearAllMocks();
   });

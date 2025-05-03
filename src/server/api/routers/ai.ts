@@ -3,7 +3,6 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { categories } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { generateObject } from "ai";
 import { env } from "@/env"; // Import env to access the API key safely
 import Groq from "groq-sdk";
 

@@ -19,20 +19,31 @@ import {
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 
-// Type simplifié pour le budget
-interface BudgetType {
+// Type pour la catégorie
+interface Category {
   id: string;
   name: string;
-  amount: number;
-  period: string;
-  spentAmount: number;
-  remainingAmount: number;
-  budgetsToCategories: {
-    category: {
-      id: string;
-      name: string;
-    }
-  }[];
+}
+
+// Type pour la relation budget-catégorie
+interface BudgetToCategory {
+  category: Category;
+}
+
+// Type pour le budget
+interface Budget {
+  id: string;
+  name: string;
+  amount: number | string;
+  period: "MONTHLY" | "YEARLY";
+  spentAmount: number | string;
+  remainingAmount: number | string;
+  budgetsToCategories?: BudgetToCategory[];
+}
+
+// Type pour les métadonnées de la table
+interface TableMeta {
+  editBudget?: (budget: Budget) => void;
 }
 
 // Fonction utilitaire pour formater les montants en euros
@@ -45,7 +56,7 @@ const formatAmount = (amount: number | string | null | undefined) => {
 };
 
 // Définition des colonnes pour le tableau des budgets
-export const columns: ColumnDef<any>[] = [
+export const columns: ColumnDef<Budget>[] = [
   {
     accessorKey: "name",
     header: "Nom",
@@ -56,7 +67,7 @@ export const columns: ColumnDef<any>[] = [
     header: "Catégories",
     cell: ({ row }) => {
       const budget = row.original;
-      const categories = budget.budgetsToCategories?.map((btc: any) => btc.category) || [];
+      const categories = budget.budgetsToCategories?.map(btc => btc.category) || [];
       
       if (categories.length === 0) {
         return <span className="text-muted-foreground">Aucune</span>;
@@ -64,7 +75,7 @@ export const columns: ColumnDef<any>[] = [
       
       return (
         <div className="flex flex-wrap gap-1">
-          {categories.slice(0, 2).map((category: any) => (
+          {categories.slice(0, 2).map(category => (
             <Badge key={category.id} variant="outline">
               {category.name}
             </Badge>
@@ -130,7 +141,7 @@ export const columns: ColumnDef<any>[] = [
       const utils = api.useUtils();
       
       // Récupérer la fonction d'édition à partir de meta
-      const meta = table.options.meta as { editBudget?: (budget: any) => void };
+      const meta = table.options.meta as TableMeta;
       const handleEdit = meta?.editBudget;
 
       // Mutation pour supprimer un budget

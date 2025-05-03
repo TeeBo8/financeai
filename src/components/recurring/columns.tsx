@@ -4,7 +4,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from '@trpc/server';
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 // Importer les actions de ligne
 import { RecurringTransactionRowActions } from "./recurring-transaction-row-actions";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { budgets, budgetsToCategories, categories, transactions } from "@/server/db/schema";
+import { budgets, budgetsToCategories, transactions } from "@/server/db/schema";
 import { eq, and, sql, gte, lte, inArray, sum, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { revalidatePath } from "next/cache";
@@ -19,18 +19,6 @@ function getCurrentPeriod(period: string): { startDate: Date, endDate: Date } {
             return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
     }
 }
-
-// Schema de base pour la création/modification (sans l'ID pour la création)
-const budgetInputSchemaBase = z.object({
-  name: z.string().min(1, "Le nom est requis"),
-  amount: z.coerce.number().positive("Le montant doit être positif"),
-  period: z.enum(["monthly", "weekly", "custom"]),
-  startDate: z.date(),
-  endDate: z.date().nullable(),
-  // Accepte null en entrée du formulaire pour "Aucune catégorie"
-  // Mais sera converti en chaîne vide ('') en DB car le schéma DB définit .notNull()
-  categoryId: z.string().nullable(),
-});
 
 export const budgetRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -154,7 +142,7 @@ export const budgetRouter = createTRPCRouter({
                   categoryId
                 }))
               );
-          } catch (error) {
+          } catch (_error) {
             // Continuer même si l'association échoue
           }
         }

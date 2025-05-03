@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { recurringTransactionFormSchema } from "@/lib/schemas/recurring-transaction-schema";
-import { useRecurringTransactionDialogStore, defaultRecurringTransactionFormValues } from "@/stores/useRecurringTransactionDialogStore";
+import { defaultRecurringTransactionFormValues, useRecurringTransactionDialogStore } from "@/stores/useRecurringTransactionDialogStore";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { z } from "zod";
-import { ComboboxField, type ComboboxOptionWithStyle } from "@/components/ui/combobox-rhf";
+import { ComboboxField } from "@/components/ui/combobox-rhf";
 
 // Helper pour formater les dates pour les inputs type="date"
 const formatDateForInput = (date: Date | string | null | undefined): string => {
@@ -24,7 +21,7 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
         if (isNaN(d.getTime())) return ""; // Vérifier si la date est valide
         // Utiliser toISOString et slice pour obtenir YYYY-MM-DD en UTC
         return d.toISOString().slice(0, 10);
-    } catch (e) {
+    } catch (_e) {
         return "";
     }
 };
@@ -48,18 +45,16 @@ export function RecurringTransactionForm() {
     const { closeDialog, isEditing, dataToEdit } = useRecurringTransactionDialogStore();
     
     // États locaux pour suivre les sélections
-    const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>("");
-    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-    const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
+    const [_selectedBankAccountId, setSelectedBankAccountId] = useState<string>("");
+    const [_selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+    const [_transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
 
     // --- Préparation Données (Comptes, Catégories) ---
-    const { data: bankAccounts = [], isLoading: isLoadingAccounts } = api.bankAccount.getAll.useQuery();
-    const { data: categories = [], isLoading: isLoadingCategories } = api.category.getAll.useQuery();
+    const { data: bankAccounts = [] } = api.bankAccount.getAll.useQuery();
+    const { data: categories = [] } = api.category.getAll.useQuery();
 
     // --- Initialisation Formulaire ---
     const form = useForm<FormValues>({
-        // Ne pas utiliser de resolver pour l'instant pour éviter les problèmes de validation
-        // resolver: zodResolver(recurringTransactionFormSchema),
         defaultValues: {
             ...defaultRecurringTransactionFormValues,
             type: 'income',
@@ -96,7 +91,7 @@ export function RecurringTransactionForm() {
                     // Montant toujours positif dans le formulaire
                     amount: absAmount,
                     type: isExpense ? 'expense' : 'income',
-                    frequency: dataToEdit.frequency as any,
+                    frequency: dataToEdit.frequency,
                     interval: dataToEdit.interval,
                     // Dates au format YYYY-MM-DD pour input type="date"
                     startDate: formatDateForInput(dataToEdit.startDate),
@@ -104,8 +99,8 @@ export function RecurringTransactionForm() {
                     bankAccountId: dataToEdit.bankAccountId || "",
                     categoryId: dataToEdit.categoryId || null,
                 });
-            } catch (e) {
-                console.error("Error preparing form data:", e);
+            } catch (error) {
+                console.error("Error preparing form data:", error);
                 toast.error("Erreur lors du chargement des données");
             }
         } else {
@@ -250,7 +245,6 @@ export function RecurringTransactionForm() {
                                     }}
                                 />
                             </FormControl>
-                            <FormDescription>Montant de chaque occurrence.</FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -260,7 +254,7 @@ export function RecurringTransactionForm() {
                 <FormField
                     control={form.control}
                     name="bankAccountId"
-                    render={({ field }) => (
+                    render={({ field: _field }) => (
                         <FormItem>
                             <FormLabel>Compte Bancaire</FormLabel>
                             <ComboboxField
@@ -286,14 +280,14 @@ export function RecurringTransactionForm() {
                 <FormField
                     control={form.control}
                     name="categoryId"
-                    render={({ field }) => (
+                    render={({ field: _field }) => (
                         <FormItem>
                             <FormLabel>Catégorie (Optionnelle)</FormLabel>
                             <Select
-                                value={field.value || "none"}
+                                value={_field.value || "none"}
                                 onValueChange={(value) => {
                                     const newValue = value === "none" ? null : value;
-                                    field.onChange(newValue);
+                                    _field.onChange(newValue);
                                     setSelectedCategoryId(newValue);
                                 }}
                             >
@@ -304,9 +298,7 @@ export function RecurringTransactionForm() {
                                 </FormControl>
                                 <SelectContent>
                                     <SelectItem value="none">-- Aucune --</SelectItem>
-                                    {isLoadingCategories ? (
-                                        <SelectItem value="loading" disabled>Chargement...</SelectItem>
-                                    ) : categories?.map((cat) => (
+                                    {categories?.map((cat) => (
                                         <SelectItem key={cat.id} value={cat.id}>
                                             {cat.name}
                                         </SelectItem>

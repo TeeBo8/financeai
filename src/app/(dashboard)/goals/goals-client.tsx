@@ -14,7 +14,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { TRPCClientError } from "@trpc/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";

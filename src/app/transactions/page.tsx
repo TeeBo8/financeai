@@ -1,18 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, FilterX, Loader2 } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DatePicker } from "@/components/ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { TransactionsDataTable } from "@/components/transactions/transactions-data-table";
 import { TransactionFilters } from "@/components/transactions/transaction-filters";
@@ -37,7 +29,7 @@ export default function TransactionsPage() {
 
   // Créer l'objet filterInput basé sur les paramètres d'URL
   const filterInput = React.useMemo(() => {
-    const input: Record<string, any> = {};
+    const input: Record<string, unknown> = {};
     
     // Recherche textuelle
     const query = searchParams.get('q');
@@ -84,10 +76,7 @@ export default function TransactionsPage() {
   }, [searchParams]); // Recalculer quand les searchParams changent
   
   // Requête tRPC pour les transactions avec les filtres de l'URL
-  const transactionsQuery = api.transaction.getAll.useQuery(filterInput, {
-    // keepPreviousData peut être utile pour éviter les flashs pendant le chargement
-    // keepPreviousData: true,
-  });
+  const transactionsQuery = api.transaction.getAll.useQuery(filterInput);
 
   // Requête tRPC pour les catégories (pour les références)
   const categoriesQuery = api.category.getAll.useQuery();
@@ -103,7 +92,7 @@ export default function TransactionsPage() {
   const isLoading = transactionsQuery.isLoading ?? categoriesQuery.isLoading ?? bankAccountsQuery.isLoading;
   
   // Vérifier si des filtres sont actifs (pour l'UI)
-  const hasActiveFilters = searchParams.toString() !== '';
+  const _hasActiveFilters = searchParams.toString() !== '';
 
   // Affichage pendant le chargement (ajuste si nécessaire)
   if (isLoading && !transactionsQuery.data) { // Affiche skeleton seulement au premier chargement

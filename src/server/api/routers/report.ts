@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
 import { transactions, categories } from "@/server/db/schema";
-import { and, eq, gte, lte, sql, desc, lt, asc, inArray } from "drizzle-orm";
+import { and, eq, gte, lte, sql, desc, lt, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { 
   startOfMonth, endOfMonth, subMonths, format, 

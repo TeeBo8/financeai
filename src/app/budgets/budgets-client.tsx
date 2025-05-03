@@ -5,7 +5,7 @@ import { type AppRouter } from "@/server/api/root";
 import { type inferRouterOutputs } from "@trpc/server";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, FilterX, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import {
@@ -15,10 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { BudgetDialog } from "@/components/budgets/budget-dialog";
-import { BudgetCardActions } from "@/components/budgets/budget-card-actions";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Card,
@@ -27,7 +24,6 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -56,7 +52,7 @@ interface BudgetsClientProps {
 }
 
 export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClientProps) {
-  const router = useRouter();
+  const _router = useRouter();
   const utils = api.useUtils();
   
   // État local pour le dialogue
@@ -134,7 +130,7 @@ export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClient
   };
 
   // Reset des filtres
-  const resetFilters = () => {
+  const _resetFilters = () => {
     setFilters({
       period: 'all',
       spentPercentage: 'all',
@@ -142,12 +138,12 @@ export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClient
   };
 
   // Vérifie s'il y a des filtres actifs
-  const hasActiveFilters = 
+  const _hasActiveFilters = 
     (filters.period && filters.period !== 'all') || 
     (filters.spentPercentage && filters.spentPercentage !== 'all');
 
   // Fonction pour ouvrir le dialogue de création
-  const handleNewBudget = () => {
+  const _handleNewBudget = () => {
     setEditingBudget(null);
     setIsDialogOpen(true);
   };
@@ -352,7 +348,13 @@ export default function BudgetsClient({ budgets: initialBudgets }: BudgetsClient
         isOpen={isDialogOpen} 
         onClose={handleCloseDialog} 
         isEditing={!!editingBudget} // Passe l'état d'édition
-        budgetToEdit={editingBudget} // Passe le budget à éditer
+        budgetToEdit={editingBudget ? {
+          id: editingBudget.id,
+          name: editingBudget.name,
+          amount: parseFloat(editingBudget.amount.toString()),
+          period: editingBudget.period as "MONTHLY" | "YEARLY",
+          budgetsToCategories: editingBudget.budgetsToCategories
+        } : undefined} // Convertit le budget à éditer dans le bon format
       />
     </div>
   );

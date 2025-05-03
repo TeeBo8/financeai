@@ -50,7 +50,10 @@ vi.mock('~/server/auth/config', () => ({
     providers: [],
     adapter: {},
     callbacks: {
-      session: ({ session, user }: { session: any; user: any }) => ({
+      session: ({ session, user }: { 
+        session: { user: { id?: string; [key: string]: unknown } }; 
+        user: { id: string; [key: string]: unknown } 
+      }) => ({
         ...session,
         user: {
           ...session.user,

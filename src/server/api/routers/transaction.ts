@@ -1,6 +1,7 @@
 import { z } from "zod"; // Utile pour valider les entrées plus tard
 import { eq, desc, and, gte, lte, sql, like, lt } from "drizzle-orm"; // Import des opérateurs Drizzle (equal, descending)
 import { revalidatePath } from "next/cache"; // Import de revalidatePath pour invalider le cache
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import {
   createTRPCRouter,
@@ -13,6 +14,16 @@ import { db } from "@/server/db";
 import * as schema from "@/server/db/schema"; // Importe toutes les tables et relations
 import { TRPCError } from "@trpc/server";
 import { transactions, bankAccounts } from "@/server/db/schema"; // Import direct des tables nécessaires
+
+// Type pour le contexte avec la base de données
+interface ContextWithDb {
+  db: PostgresJsDatabase<typeof schema>;
+  session: {
+    user: {
+      id: string;
+    };
+  };
+}
 
 // Schéma de validation pour la création d'une transaction
 const createTransactionSchema = z.object({
@@ -48,7 +59,7 @@ export const transactionRouter = createTRPCRouter({
     }).optional())
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const dbClient = (ctx as any).db ?? db;
+      const dbClient = (ctx as ContextWithDb).db ?? db;
 
       console.log(`Fetching transactions for user: ${userId}`, "with filters:", input);
 
@@ -117,7 +128,7 @@ export const transactionRouter = createTRPCRouter({
     .input(createTransactionSchema)
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const dbClient = (ctx as any).db ?? db;
+      const dbClient = (ctx as ContextWithDb).db ?? db;
       console.log("[TEST_LOG] Create Start:", { userId, input }); // Log 1
 
       try {
@@ -227,7 +238,7 @@ export const transactionRouter = createTRPCRouter({
       const transactionIdToDelete = input.id;
 
       // Permet l'injection d'une base de données mockée dans les tests
-      const dbClient = (ctx as any).db ?? db;
+      const dbClient = (ctx as ContextWithDb).db ?? db;
 
       console.log(`User ${userId} attempting to delete transaction ${transactionIdToDelete}`);
 
@@ -295,7 +306,7 @@ export const transactionRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const dbClient = (ctx as any).db ?? db;
+      const dbClient = (ctx as ContextWithDb).db ?? db;
       const { id: transactionId, ...updateData } = input; // Sépare l'ID
 
       console.log(`User ${userId} attempting to update transaction ${transactionId}`);
@@ -442,7 +453,7 @@ export const transactionRouter = createTRPCRouter({
       // Génère un ID unique pour lier les deux transactions du transfert
       const transferId = `tf_${crypto.randomUUID()}`; // Utilise crypto.randomUUID() natif
 
-      const dbClient = (ctx as any).db ?? db;
+      const dbClient = (ctx as ContextWithDb).db ?? db;
 
       console.log(`Creating transfer for user: ${userId}, From: ${fromAccountId}, To: ${toAccountId}, Amount: ${transferAmount}, TransferID: ${transferId}`);
 

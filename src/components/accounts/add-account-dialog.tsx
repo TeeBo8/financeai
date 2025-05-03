@@ -42,7 +42,12 @@ export default function AddAccountDialog({
         </DialogHeader>
         <div className="py-4">
           <AccountForm
-            accountToEdit={accountToEdit}
+            accountToEdit={accountToEdit ? {
+              id: accountToEdit.id,
+              name: accountToEdit.name,
+              icon: accountToEdit.icon,
+              color: accountToEdit.color
+            } : undefined}
             onFormSubmit={onClose} // Passe la fonction onClose pour fermer le dialogue après succès
           />
         </div>

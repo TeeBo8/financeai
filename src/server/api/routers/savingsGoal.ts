@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import * as schema from "@/server/db/schema";
 import { TRPCError } from "@trpc/server";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 // --- Schémas Zod d'Input ---
 
@@ -92,7 +92,6 @@ export const savingsGoalRouter = createTRPCRouter({
       try {
         const goals = await ctx.db.query.savingsGoals.findMany({
           where: eq(schema.savingsGoals.userId, userId),
-          orderBy: (goals, { desc }) => [desc(goals.createdAt)],
         });
 
         // Convertit les montants en nombres pour le frontend

@@ -8,7 +8,6 @@ import {
   timestamp,
   varchar,
   decimal,
-  boolean,
 } from "drizzle-orm/pg-core";
 // Commenté pour éviter l'erreur dans les tests de Vitest
 // import { type AdapterAccount } from "next-auth/adapters";

@@ -114,7 +114,7 @@ export function TransactionForm({
   const { data: categories } = api.category.getAll.useQuery();
   
   // Récupérer les comptes bancaires
-  const { data: bankAccounts, isLoading, isError, error } = api.bankAccount.getAll.useQuery();
+  const { data: bankAccounts } = api.bankAccount.getAll.useQuery();
   
   // Obtenir le contexte tRPC pour pouvoir invalider les queries
   const utils = api.useUtils();
@@ -431,7 +431,7 @@ export function TransactionForm({
                         className="w-full pl-3 text-left font-normal"
                       >
                         {field.value ? (
-                          format(field.value, "dd MMMM yyyy", { locale: fr })
+                          format(new Date(field.value), "dd MMMM yyyy", { locale: fr })
                         ) : (
                           <span>Choisir une date</span>
                         )}
@@ -460,7 +460,7 @@ export function TransactionForm({
           <FormField
             control={form.control}
             name="categoryId"
-            render={({ field }) => (
+            render={({ field: _field }) => (
               <FormItem>
                 <FormLabel>Catégorie</FormLabel>
                 <div className="flex items-center space-x-2">

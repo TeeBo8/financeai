@@ -1,11 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { appRouter } from '@/server/api/root';
-import type { AppRouter } from '@/server/api/root';
 import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
-import type { Session } from 'next-auth';
 import { createTRPCContext } from '@/server/api/trpc';
+import type { inferAsyncReturnType } from '@trpc/server';
 
 // Mock de la base de données
 vi.mock('@/server/db', () => ({
@@ -68,14 +65,13 @@ vi.mock('drizzle-orm', () => ({
   getTableColumns: vi.fn(),
 }));
 
-describe('Bank Account Router Tests', () => {
-  const mockSession: Session = { 
-    user: { id: 'test-user-id' }, 
-    expires: 'never',
-  };
+// Type pour le contexte
+type Context = inferAsyncReturnType<typeof createTRPCContext>;
+type Caller = ReturnType<typeof appRouter.createCaller>;
 
-  let ctx: any;
-  let caller: any;
+describe('Bank Account Router Tests', () => {
+  let ctx: Context;
+  let caller: Caller;
 
   beforeEach(async () => {
     vi.clearAllMocks();

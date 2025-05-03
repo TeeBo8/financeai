@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 // Importer le store
 import { useRecurringTransactionDialogStore } from "@/stores/useRecurringTransactionDialogStore";
-// Importer le DataTable et les colonnes
-import { columns } from "@/components/recurring/columns";
+// Importer le DataTable
 import { RecurringTransactionsDataTable } from "@/components/recurring/recurring-transactions-data-table";
 // Importer le type de données
 import { type RecurringTransactionWithRelations } from "@/lib/types";
