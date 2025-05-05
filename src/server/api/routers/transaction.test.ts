@@ -6,6 +6,7 @@ import type { inferAsyncReturnType } from '@trpc/server';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { eq, desc, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import * as schema from '@/server/db/schema';
 
 interface MockDb {
   query: {
