@@ -66,6 +66,8 @@ export const recurringTransactionFormSchema = z.object({
                 .or(z.literal('')) // Permet chaîne vide du formulaire
                 .transform(val => val === '' ? null : val), // Transforme chaîne vide en null
 
+  // Abonnement
+  isSubscription: z.boolean().default(false),
 })
 // Validation au niveau de l'objet pour comparer les dates
 .refine(validateEndDateAfterStartDate, {

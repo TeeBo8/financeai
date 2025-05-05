@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -8,140 +8,58 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { defaultRecurringTransactionFormValues, useRecurringTransactionDialogStore } from "@/stores/useRecurringTransactionDialogStore";
+import { useRecurringTransactionDialogStore } from "@/stores/useRecurringTransactionDialogStore";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ComboboxField } from "@/components/ui/combobox-rhf";
-
-// Helper pour formater les dates pour les inputs type="date"
-const formatDateForInput = (date: Date | string | null | undefined): string => {
-    if (!date) return "";
-    try {
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return ""; // Vérifier si la date est valide
-        // Utiliser toISOString et slice pour obtenir YYYY-MM-DD en UTC
-        return d.toISOString().slice(0, 10);
-    } catch (_e) {
-        return "";
-    }
-};
-
-// Type simple pour les données du formulaire
-type FormValues = {
-  description: string;
-  notes: string;
-  amount: number;
-  type: 'income' | 'expense';
-  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-  interval: number;
-  startDate: string;
-  endDate: string;
-  bankAccountId: string;
-  categoryId: string | null;
-};
+import { Switch } from "@/components/ui/switch";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { recurringTransactionFormSchema, type RecurringTransactionFormValues } from "@/lib/validations/recurring-transaction";
 
 export function RecurringTransactionForm() {
     const utils = api.useUtils();
-    const { closeDialog, isEditing, dataToEdit } = useRecurringTransactionDialogStore();
+    const { closeDialog } = useRecurringTransactionDialogStore();
     
-    // États locaux pour suivre les sélections
-    const [_selectedBankAccountId, setSelectedBankAccountId] = useState<string>("");
-    const [_selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-    const [_transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
-
     // --- Préparation Données (Comptes, Catégories) ---
     const { data: bankAccounts = [] } = api.bankAccount.getAll.useQuery();
     const { data: categories = [] } = api.category.getAll.useQuery();
 
-    // --- Initialisation Formulaire ---
-    const form = useForm<FormValues>({
-        defaultValues: {
-            ...defaultRecurringTransactionFormValues,
-            type: 'income',
-            categoryId: null,
-            endDate: "",
-            bankAccountId: '',
-        },
-    });
-
-    // --- Pré-remplissage pour l'édition ---
-    useEffect(() => {
-        if (isEditing && dataToEdit) {
-            try {
-                // Déterminer le type (revenu/dépense) d'après le signe du montant
-                const amount = parseFloat(dataToEdit.amount);
-                const isExpense = amount < 0;
-                const absAmount = Math.abs(amount);
-                
-                // Mettre à jour les états locaux
-                setTransactionType(isExpense ? 'expense' : 'income');
-                
-                // ID du compte
-                if (dataToEdit.bankAccountId) {
-                    setSelectedBankAccountId(dataToEdit.bankAccountId);
-                }
-                
-                // ID de catégorie 
-                setSelectedCategoryId(dataToEdit.categoryId);
-                
-                // Reset du formulaire avec les données
-                form.reset({
-                    description: dataToEdit.description,
-                    notes: dataToEdit.notes ?? "",
-                    // Montant toujours positif dans le formulaire
-                    amount: absAmount,
-                    type: isExpense ? 'expense' : 'income',
-                    frequency: dataToEdit.frequency,
-                    interval: dataToEdit.interval,
-                    // Dates au format YYYY-MM-DD pour input type="date"
-                    startDate: formatDateForInput(dataToEdit.startDate),
-                    endDate: formatDateForInput(dataToEdit.endDate),
-                    bankAccountId: dataToEdit.bankAccountId || "",
-                    categoryId: dataToEdit.categoryId || null,
-                });
-            } catch (error) {
-                console.error("Error preparing form data:", error);
-                toast.error("Erreur lors du chargement des données");
-            }
-        } else {
-            // Reset pour la création
-            setTransactionType('income');
-            setSelectedBankAccountId("");
-            setSelectedCategoryId(null);
-            form.reset({
-                ...defaultRecurringTransactionFormValues,
-                type: 'income',
-                categoryId: null,
-                endDate: "",
-                bankAccountId: '',
-            });
-        }
-    }, [isEditing, dataToEdit, form]);
-
     // --- Mutations ---
-    const createRecurring = api.recurringTransaction.create.useMutation({
-        onSuccess: (newItem) => {
-            toast.success(`Transaction récurrente "${newItem.description}" créée !`);
-            void utils.recurringTransaction.getAll.invalidate();
-            closeDialog();
+    const { mutate: createRecurringTransaction, isPending: isCreating } =
+      api.recurringTransaction.create.useMutation({
+        onSuccess: () => {
+          utils.recurringTransaction.getAll.invalidate();
+          toast.success("Transaction récurrente créée avec succès !");
+          form.reset();
         },
-        onError: (error) => toast.error(`Erreur création: ${error.message}`),
-    });
-
-    const updateRecurring = api.recurringTransaction.update.useMutation({
-        onSuccess: (updatedItem) => {
-            toast.success(`Transaction récurrente "${updatedItem.description}" mise à jour !`);
-            void utils.recurringTransaction.getAll.invalidate();
-            closeDialog();
+        onError: (error) => {
+          toast.error(
+            error.data?.zodError?.fieldErrors.content?.[0] ??
+              "Une erreur est survenue lors de la création de la transaction récurrente."
+          );
         },
-        onError: (error) => toast.error(`Erreur MàJ: ${error.message}`),
-    });
+      });
 
-    const mutation = isEditing ? updateRecurring : createRecurring;
-    const { isPending } = mutation;
+    // --- Form ---
+    const form = useForm<RecurringTransactionFormValues>({
+        resolver: zodResolver(recurringTransactionFormSchema),
+        defaultValues: {
+            description: "",
+            notes: "",
+            amount: 0,
+            type: "expense",
+            frequency: "MONTHLY",
+            interval: 1,
+            startDate: new Date().toISOString().split("T")[0],
+            endDate: "",
+            bankAccountId: "",
+            categoryId: null,
+            isSubscription: false,
+        },
+    });
 
     // --- Soumission ---
-    const onSubmit = (data: FormValues) => {
+    const onSubmit = (data: RecurringTransactionFormValues) => {
         if (!data.bankAccountId) {
             toast.error("Veuillez sélectionner un compte bancaire");
             return;
@@ -161,16 +79,10 @@ export function RecurringTransactionForm() {
             endDate: data.endDate || null,
             categoryId: data.categoryId,
             bankAccountId: data.bankAccountId,
+            isSubscription: data.isSubscription,
         };
         
-        if (isEditing && dataToEdit) {
-            updateRecurring.mutate({
-                id: dataToEdit.id,
-                ...apiData
-            });
-        } else {
-            createRecurring.mutate(apiData);
-        }
+        createRecurringTransaction(apiData);
     };
 
     return (
@@ -191,7 +103,6 @@ export function RecurringTransactionForm() {
                                     onValueChange={(value) => {
                                         if (value) {
                                             field.onChange(value);
-                                            setTransactionType(value as 'income' | 'expense');
                                         }
                                     }}
                                     className="grid grid-cols-2"
@@ -288,7 +199,6 @@ export function RecurringTransactionForm() {
                                 onValueChange={(value) => {
                                     const newValue = value === "none" ? null : value;
                                     _field.onChange(newValue);
-                                    setSelectedCategoryId(newValue);
                                 }}
                             >
                                 <FormControl>
@@ -418,14 +328,37 @@ export function RecurringTransactionForm() {
                     )}
                 />
 
+                {/* Abonnement */}
+                <FormField
+                    control={form.control}
+                    name="isSubscription"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>Marquer comme Abonnement ?</FormLabel>
+                                <FormDescription>
+                                    Cochez si cette transaction représente un abonnement récurrent (ex: Netflix, Spotify...)
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    disabled={isCreating}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
                 {/* Boutons d'action */}
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={closeDialog} disabled={isPending}>
+                    <Button type="button" variant="outline" onClick={closeDialog} disabled={isCreating}>
                         Annuler
                     </Button>
-                    <Button type="submit" disabled={isPending}>
-                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isEditing ? "Mettre à jour" : "Créer la récurrence"}
+                    <Button type="submit" disabled={isCreating}>
+                        {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Créer la récurrence
                     </Button>
                 </div>
             </form>

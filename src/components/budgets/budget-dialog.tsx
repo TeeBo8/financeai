@@ -14,7 +14,7 @@ interface Budget {
   name: string;
   amount: number | string;
   period: "MONTHLY" | "YEARLY";
-  budgetsToCategories?: BudgetToCategory[];
+  budgetsToCategories: BudgetToCategory[];
 }
 
 // Type pour les données du formulaire
@@ -24,6 +24,7 @@ interface FormData {
   amount: number;
   period: "MONTHLY" | "YEARLY";
   categoryIds: string[];
+  isSubscription: boolean;
 }
 
 interface BudgetDialogProps {
@@ -42,7 +43,8 @@ export function BudgetDialog(props: BudgetDialogProps) {
     name: props.budgetToEdit.name,
     amount: typeof props.budgetToEdit.amount === 'string' ? parseFloat(props.budgetToEdit.amount) : props.budgetToEdit.amount,
     period: props.budgetToEdit.period,
-    categoryIds: props.budgetToEdit.budgetsToCategories?.map(btc => btc.categoryId) || []
+    categoryIds: props.budgetToEdit.budgetsToCategories?.map(btc => btc.categoryId) || [],
+    isSubscription: false
   } : null;
 
   if (!props.isOpen) return null;

@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Calculator,
   Target,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
@@ -108,6 +109,12 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             href="/recurring"
             icon={<RefreshCw className="size-4" />}
             title="Récurrentes"
+            isMobile={isMobile}
+          />
+          <NavItem
+            href="/subscriptions"
+            icon={<CreditCard className="size-4" />}
+            title="Abonnements"
             isMobile={isMobile}
           />
           <NavItem

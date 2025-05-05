@@ -1,10 +1,30 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { budgets, budgetsToCategories, transactions } from "@/server/db/schema";
-import { eq, and, sql, gte, lte, inArray, sum, desc } from "drizzle-orm";
+import { eq, and, sql, gte, lte, inArray, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { revalidatePath } from "next/cache";
 import { startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'; // Pour les périodes
+
+// Type pour le retour de la requête getAll
+type BudgetWithSpending = {
+  id: string;
+  name: string;
+  userId: string;
+  amount: number;
+  period: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date | null;
+  spentAmount: number;
+  remainingAmount: number;
+  categoryDisplay: string;
+  categories: Array<{
+    id: string;
+    name: string;
+  }>;
+};
 
 // Helper pour obtenir les dates de début/fin de la période courante
 function getCurrentPeriod(period: string): { startDate: Date, endDate: Date } {
@@ -21,29 +41,35 @@ function getCurrentPeriod(period: string): { startDate: Date, endDate: Date } {
 }
 
 export const budgetRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-      // 1. Récupérer tous les budgets de l'utilisateur avec leurs catégories associées
-      const userBudgets = await ctx.db.query.budgets.findMany({
-          where: eq(budgets.userId, ctx.session.user.id),
-          with: {
-              // Récupérer les IDs des catégories liées via la table de jointure
-              budgetsToCategories: {
-                  with: {
-                      category: true // Récupérer également les infos de catégorie
-                  }
-              }
-          },
-          orderBy: desc(budgets.createdAt) // Ou par nom ?
+  getAll: protectedProcedure
+    .query(async ({ ctx }): Promise<BudgetWithSpending[]> => {
+      console.log(`[BudgetGetAll LOG] Entering procedure for user: ${ctx.session.user.id}`);
+
+      const budgets = await ctx.db.query.budgets.findMany({
+        where: (budget, { eq }) => eq(budget.userId, ctx.session.user.id),
+        with: {
+          budgetsToCategories: {
+            with: {
+              category: true
+            }
+          }
+        }
       });
 
-      if (userBudgets.length === 0) return [];
+      console.log(`[BudgetGetAll LOG] Raw DB result count: ${budgets?.length ?? 'undefined/null'}`);
+
+      // Retourner un tableau vide si aucun budget n'est trouvé
+      if (!budgets || budgets.length === 0) {
+        console.log(`[BudgetGetAll LOG] No budgets found for user: ${ctx.session.user.id}`);
+        return [];
+      }
 
       // 2. Pour chaque budget, calculer le montant dépensé dans la période courante
-      const budgetsWithSpending = await Promise.all(userBudgets.map(async (budget) => {
-          const categoryIds = budget.budgetsToCategories.map(btc => btc.category.id);
+      const budgetsWithSpending = await Promise.all(budgets.map(async (budget) => {
+          const categoryIds = budget.budgetsToCategories.map(c => c.category.id);
           
           // Préparer un tableau des noms de catégories pour l'affichage
-          const categoryNames = budget.budgetsToCategories.map(btc => btc.category.name);
+          const categoryNames = budget.budgetsToCategories.map(c => c.category.name);
           const categoryDisplay = categoryNames.join(", ");
           
           let spentAmount = 0;
@@ -60,12 +86,12 @@ export const budgetRouter = createTRPCRouter({
                   .from(transactions)
                   .where(and(
                       eq(transactions.userId, ctx.session.user.id),
-                      inArray(transactions.categoryId, categoryIds), // Transactions dans les catégories liées
-                      gte(transactions.date, startDate),              // Dans la période de temps
+                      inArray(transactions.categoryId, categoryIds),
+                      gte(transactions.date, startDate),
                       lte(transactions.date, endDate),
-                      sql`${transactions.amount} < 0`                 // Uniquement les dépenses
+                      sql`${transactions.amount} < 0`
                   ))
-                  .execute(); // Utiliser execute() car on ne retourne qu'une agrégation
+                  .execute();
 
               spentAmount = result[0]?.totalSpent ?? 0;
           }
@@ -89,12 +115,13 @@ export const budgetRouter = createTRPCRouter({
               remainingAmount: budgetAmount - spentAmount,
               categoryDisplay: categoryDisplay,
               // Inclure les relations pour l'affichage si nécessaire
-              budgetsToCategories: budget.budgetsToCategories
+              categories: budget.budgetsToCategories.map(c => c.category)
           };
       }));
 
+      console.log(`[BudgetGetAll LOG] Returning ${budgetsWithSpending.length} processed budgets for user: ${ctx.session.user.id}`);
       return budgetsWithSpending;
-  }),
+    }),
 
   create: protectedProcedure
     .input(z.object({
@@ -102,6 +129,7 @@ export const budgetRouter = createTRPCRouter({
       amount: z.coerce.number().positive("Le montant doit être positif"),
       period: z.enum(["MONTHLY", "YEARLY"]),
       categoryIds: z.array(z.string()).default([]),
+      isSubscription: z.boolean().optional().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -205,6 +233,7 @@ export const budgetRouter = createTRPCRouter({
       amount: z.coerce.number().positive("Le montant doit être positif").optional(),
       period: z.enum(["MONTHLY", "YEARLY", "CUSTOM"]).optional(),
       categoryIds: z.array(z.string()).min(1, "Sélectionnez au moins une catégorie").optional(),
+      isSubscription: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { id, name, amount, period, categoryIds } = input;

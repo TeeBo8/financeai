@@ -8,6 +8,7 @@ import {
   timestamp,
   varchar,
   decimal,
+  boolean,
 } from "drizzle-orm/pg-core";
 // Commenté pour éviter l'erreur dans les tests de Vitest
 // import { type AdapterAccount } from "next-auth/adapters";
@@ -213,6 +214,7 @@ export const recurringTransactions = pgTable("recurring_transaction", {
     .references(() => bankAccounts.id, { onDelete: 'restrict' }), // Compte associé (RESTRICT pour éviter suppression compte si utilisé)
   categoryId: text("categoryId")
     .references(() => categories.id, { onDelete: 'set null' }), // Catégorie (optionnelle, SET NULL si catégorie supprimée)
+  isSubscription: boolean("is_subscription").notNull().default(false), // Nouveau champ
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
 }, (table) => ({
@@ -267,14 +269,14 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   budgetsToCategories: many(budgetsToCategories),
   recurringTransactions: many(recurringTransactions), // Nouvelle relation
   savingsGoals: many(savingsGoals), // Nouvelle relation
-}));
+}))
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
   user: one(users, { fields: [bankAccounts.userId], references: [users.id] }),
   transactions: many(transactions),
   recurringTransactions: many(recurringTransactions), // Nouvelle relation
   savingsGoals: many(savingsGoals), // Nouvelle relation
-}));
+}))
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
@@ -283,31 +285,37 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     fields: [transactions.bankAccountId],
     references: [bankAccounts.id],
   }),
-}));
+}))
 
 export const budgetsRelations = relations(budgets, ({ one, many }) => ({
   user: one(users, { fields: [budgets.userId], references: [users.id] }),
-  budgetsToCategories: many(budgetsToCategories), // Relation vers la table de jointure
-  savingsGoals: many(savingsGoals), // Nouvelle relation
-}));
+  budgetsToCategories: many(budgetsToCategories),
+  savingsGoals: many(savingsGoals),
+}))
 
 export const budgetsToCategoriesRelations = relations(budgetsToCategories, ({ one }) => ({
-  budget: one(budgets, { fields: [budgetsToCategories.budgetId], references: [budgets.id] }),
-  category: one(categories, { fields: [budgetsToCategories.categoryId], references: [categories.id] }),
-}));
+  budget: one(budgets, {
+    fields: [budgetsToCategories.budgetId],
+    references: [budgets.id],
+  }),
+  category: one(categories, {
+    fields: [budgetsToCategories.categoryId],
+    references: [categories.id],
+  }),
+}))
 
 // Relations Auth.js (souvent gérées par l'adapter, mais bon à avoir pour la clarté)
 export const accountsRelations = relations(accounts, ({ one }) => ({
     user: one(users, { fields: [accounts.userId], references: [users.id] }),
-}));
+}))
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
     user: one(users, { fields: [sessions.userId], references: [users.id] }),
-}));
+}))
 
 // Nouvelle relation pour les transactions récurrentes
 export const recurringTransactionsRelations = relations(recurringTransactions, ({ one }) => ({
   user: one(users, { fields: [recurringTransactions.userId], references: [users.id] }),
   bankAccount: one(bankAccounts, { fields: [recurringTransactions.bankAccountId], references: [bankAccounts.id] }),
   category: one(categories, { fields: [recurringTransactions.categoryId], references: [categories.id] }),
-}));
+}))

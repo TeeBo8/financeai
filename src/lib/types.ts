@@ -36,6 +36,7 @@ export type RecurringTransactionWithRelations = {
   nextOccurrenceDate: Date;
   bankAccountId: string;
   categoryId: string | null;
+  isSubscription: boolean;
   createdAt: Date;
   updatedAt: Date | null;
   bankAccount: {

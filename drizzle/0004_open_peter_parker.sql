@@ -1,0 +1,1 @@
+ALTER TABLE "finance-ai_budget" DROP COLUMN "is_subscription";

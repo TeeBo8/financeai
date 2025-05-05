@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { useRecurringTransactionDialogStore } from "@/stores/useRecurringTransactionDialogStore"; // Importer le bon store
 
 // Importer le type
 import { type AppRouter } from "@/server/api/root";
@@ -15,18 +14,17 @@ import { type inferRouterOutputs } from '@trpc/server';
 type RecurringTransactionWithRelations = inferRouterOutputs<AppRouter>['recurringTransaction']['getAll'][number];
 
 interface RecurringTransactionRowActionsProps {
-  recurring: RecurringTransactionWithRelations; // Renommer la prop
+  recurring: RecurringTransactionWithRelations;
 }
 
 export function RecurringTransactionRowActions({ recurring }: RecurringTransactionRowActionsProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const { openEditDialog } = useRecurringTransactionDialogStore(); // Utiliser le store récurrent
   const utils = api.useUtils();
 
   const deleteRecurring = api.recurringTransaction.delete.useMutation({
     onSuccess: () => {
       toast.success("Transaction récurrente supprimée.");
-      void utils.recurringTransaction.getAll.invalidate(); // Invalider la bonne query
+      void utils.recurringTransaction.getAll.invalidate();
       setIsDeleteDialogOpen(false);
     },
     onError: (error) => {
@@ -38,9 +36,6 @@ export function RecurringTransactionRowActions({ recurring }: RecurringTransacti
   const handleDelete = () => {
     deleteRecurring.mutate({ id: recurring.id });
   };
-
-  // Pas besoin de handleEdit séparé, on appelle directement openEditDialog
-  // const handleEdit = () => { openEditDialog(recurring); };
 
   return (
     <>
@@ -71,11 +66,6 @@ export function RecurringTransactionRowActions({ recurring }: RecurringTransacti
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {/* Appeler openEditDialog directement */}
-          <DropdownMenuItem onClick={() => openEditDialog(recurring)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Modifier
-          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setIsDeleteDialogOpen(true)}
             className="text-red-600 focus:text-red-700 focus:bg-red-50"

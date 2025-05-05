@@ -1,0 +1,2 @@
+ALTER TABLE "finance-ai_budget" ADD COLUMN "is_subscription" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "finance-ai_recurring_transaction" ADD COLUMN "is_subscription" boolean DEFAULT false NOT NULL;

@@ -14,11 +14,11 @@ interface RecurringPageClientProps {
 }
 
 export default function RecurringPageClient({ recurringModels }: RecurringPageClientProps) {
-  const { openCreateDialog } = useRecurringTransactionDialogStore();
+  const { openDialog } = useRecurringTransactionDialogStore();
 
   const handleNewRecurring = () => {
     // Utiliser le store pour ouvrir le dialogue
-    openCreateDialog();
+    openDialog();
   };
 
   return (

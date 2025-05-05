@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function RecurringTransactionsPage() {
   // Fetch initial des modèles récurrents
-  const recurringModels = await api.recurringTransaction.getAll();
+  const recurringModels = await api.recurringTransaction.getAll({});
 
   return (
     <section className="container grid items-center gap-6 pb-8 pt-6 md:py-8">

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { recurringTransactions } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -52,27 +52,37 @@ export const recurringTransactionInputSchema = z.object({
   bankAccountId: z.string().min(1, "Compte invalide."),
   // categoryId peut être null
   categoryId: z.string().nullable(),
+  isSubscription: z.boolean().optional().default(false),
 });
 
 
 export const recurringTransactionRouter = createTRPCRouter({
   // --- GET ALL ---
-  getAll: protectedProcedure.query(async ({ ctx }): Promise<RecurringTransactionWithRelations[]> => {
-    const results = await ctx.db.query.recurringTransactions.findMany({
-      where: eq(recurringTransactions.userId, ctx.session.user.id),
-      orderBy: [desc(recurringTransactions.nextOccurrenceDate)],
-      with: {
-          bankAccount: { columns: { name: true } },
-          category: { columns: { name: true, color: true, icon: true } },
-      }
-    });
+  getAll: protectedProcedure
+    .input(
+      z.object({
+        isSubscription: z.boolean().optional(),
+      })
+    )
+    .query(async ({ ctx, input }): Promise<RecurringTransactionWithRelations[]> => {
+      const results = await ctx.db.query.recurringTransactions.findMany({
+        where: (rt, { eq, and }) => and(
+          eq(rt.userId, ctx.session.user.id),
+          input.isSubscription !== undefined ? eq(rt.isSubscription, input.isSubscription) : undefined
+        ),
+        orderBy: [desc(recurringTransactions.nextOccurrenceDate)],
+        with: {
+            bankAccount: { columns: { name: true } },
+            category: { columns: { name: true, color: true, icon: true } },
+        }
+      });
 
-    // Convertir la fréquence en type correct
-    return results.map(result => ({
-      ...result,
-      frequency: result.frequency as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
-    }));
-  }),
+      // Convertir la fréquence en type correct
+      return results.map(result => ({
+        ...result,
+        frequency: result.frequency as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
+      }));
+    }),
 
   // --- CREATE ---
   create: protectedProcedure
@@ -110,92 +120,6 @@ export const recurringTransactionRouter = createTRPCRouter({
       }
       revalidatePath("/recurring");
       return newItem;
-    }),
-
-  // --- UPDATE ---
-  update: protectedProcedure
-    .input(
-      recurringTransactionInputSchema.extend({
-        id: z.string().min(1), // ID requis pour l'update
-         // Rendre tous les autres champs optionnels
-        description: recurringTransactionInputSchema.shape.description.optional(),
-        notes: recurringTransactionInputSchema.shape.notes.optional(),
-        amount: recurringTransactionInputSchema.shape.amount.optional(),
-        frequency: recurringTransactionInputSchema.shape.frequency.optional(),
-        interval: recurringTransactionInputSchema.shape.interval.optional(),
-        startDate: recurringTransactionInputSchema.shape.startDate.optional(),
-        endDate: recurringTransactionInputSchema.shape.endDate.optional(), // Déjà nullable, rendre optional
-        bankAccountId: recurringTransactionInputSchema.shape.bankAccountId.optional(),
-        categoryId: recurringTransactionInputSchema.shape.categoryId.optional(), // Déjà nullable, rendre optional
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { id, startDate, frequency, interval, ...updateData } = input;
-      const userId = ctx.session.user.id;
-
-      // 1. Vérifier si l'enregistrement appartient à l'utilisateur
-      const existingItem = await ctx.db.query.recurringTransactions.findFirst({
-        where: and(eq(recurringTransactions.id, id), eq(recurringTransactions.userId, userId)),
-      });
-      if (!existingItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction récurrente non trouvée." });
-      }
-
-      // 2. Préparer les données à mettre à jour
-      const { amount, ...otherUpdateData } = updateData;
-      const finalUpdateData: Partial<typeof recurringTransactions.$inferInsert> = {
-          ...otherUpdateData,
-          updatedAt: new Date(),
-          // Convertir amount si présent, s'assurer qu'il est toujours un string
-          ...(amount !== undefined && { amount: amount.toString() }),
-          // Convertir dates si présentes (Zod les a déjà transformées en Date)
-          ...(startDate && { startDate }),
-          ...(updateData.endDate !== undefined && { endDate: updateData.endDate }),
-      };
-
-      // 3. Recalculer nextOccurrenceDate SEULEMENT si la date de début, la fréquence ou l'intervalle changent
-      const needsNextDateRecalc = startDate || frequency || interval;
-      if (needsNextDateRecalc) {
-          finalUpdateData.nextOccurrenceDate = calculateNextOccurrence(
-              startDate || existingItem.startDate, // Utiliser la nouvelle date si fournie, sinon l'ancienne
-              frequency || existingItem.frequency,
-              interval || existingItem.interval
-          );
-      }
-
-       // 4. Vérifier endDate vs startDate
-      const finalStartDate = startDate || existingItem.startDate;
-      const finalEndDate = updateData.endDate === null ? null : (updateData.endDate || existingItem.endDate);
-      if (finalEndDate && finalEndDate < finalStartDate) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "La date de fin doit être après la date de début." });
-      }
-
-      // Filtrer les clés undefined avant l'update
-       const filteredUpdateData = Object.fromEntries(
-          Object.entries(finalUpdateData).filter(([, value]) => value !== undefined)
-      );
-
-
-      // 5. Exécuter l'update
-      if (Object.keys(filteredUpdateData).length > 0) {
-          const [updatedItem] = await ctx.db
-            .update(recurringTransactions)
-            .set(filteredUpdateData)
-            .where(eq(recurringTransactions.id, id))
-            .returning();
-
-           if (!updatedItem) {
-              throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erreur mise à jour transaction récurrente." });
-           }
-           revalidatePath("/recurring");
-           return updatedItem;
-
-      } else {
-          // Rien à mettre à jour (à part potentiellement nextOccurrenceDate si recalculé sans autres modifs)
-          // Il faudrait gérer ce cas séparément si nécessaire, ou juste retourner l'existant.
-          return existingItem;
-      }
-
     }),
 
   // --- DELETE ---

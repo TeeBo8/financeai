@@ -22,6 +22,20 @@
       "when": 1745579618317,
       "tag": "0002_wise_aqueduct",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1746378541381,
+      "tag": "0003_huge_daredevil",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1746383445947,
+      "tag": "0004_open_peter_parker",
+      "breakpoints": true
     }
   ]
 }

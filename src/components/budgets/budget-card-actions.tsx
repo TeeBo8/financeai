@@ -82,7 +82,7 @@ export function BudgetCardActions({ budget, onEdit }: BudgetCardActionsProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le budget &quot;{budget.name}&quot; sera supprimé.
+              Voulez-vous vraiment supprimer le budget &quot;{budget.name}&quot; ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -92,7 +92,7 @@ export function BudgetCardActions({ budget, onEdit }: BudgetCardActionsProps) {
               disabled={deleteBudget.isPending}
               className="bg-destructive text-destructive-foreground"
             >
-              {deleteBudget.isPending ? "Suppression..." : "Supprimer"}
+              {deleteBudget.isPending ? "Suppression..." : "Confirmer la suppression"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
