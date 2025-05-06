@@ -89,7 +89,7 @@ export default function Home() {
             </div>
 
             <div className="mx-auto grid justify-center gap-6 sm:grid-cols-2 md:max-w-[64rem] md:grid-cols-3">
-              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2">
+              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2 hover:scale-105 hover:shadow-xl transition-transform duration-200 ease-out hover:z-10">
                 <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
                   <ListChecks className="h-12 w-12 text-amber-600 dark:text-amber-200" />
                   <div className="space-y-2">
@@ -101,7 +101,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2">
+              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2 hover:scale-105 hover:shadow-xl transition-transform duration-200 ease-out hover:z-10">
                 <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
                   <Target className="h-12 w-12 text-amber-600 dark:text-amber-200" />
                   <div className="space-y-2">
@@ -113,7 +113,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2">
+              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2 hover:scale-105 hover:shadow-xl transition-transform duration-200 ease-out hover:z-10">
                 <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
                   <ArrowRightLeft className="h-12 w-12 text-amber-600 dark:text-amber-200" />
                   <div className="space-y-2">
@@ -125,7 +125,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2">
+              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2 hover:scale-105 hover:shadow-xl transition-transform duration-200 ease-out hover:z-10">
                 <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
                   <PieChart className="h-12 w-12 text-amber-600 dark:text-amber-200" />
                   <div className="space-y-2">
@@ -137,7 +137,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2">
+              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2 hover:scale-105 hover:shadow-xl transition-transform duration-200 ease-out hover:z-10">
                 <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
                   <Bot className="h-12 w-12 text-amber-600 dark:text-amber-200" />
                   <div className="space-y-2">
@@ -149,7 +149,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2">
+              <div className="relative overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white/50 dark:bg-stone-900/50 backdrop-blur-sm p-2 hover:scale-105 hover:shadow-xl transition-transform duration-200 ease-out hover:z-10">
                 <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
                   <Rocket className="h-12 w-12 text-amber-600 dark:text-amber-200" />
                   <div className="space-y-2">
