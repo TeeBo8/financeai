@@ -48,28 +48,46 @@ export default function Home() {
               Simplifiez votre gestion financière avec notre assistant IA. Suivez vos dépenses, définissez des objectifs et prenez de meilleures décisions financières.
             </p>
             {!session ? (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-xl mx-auto">
-                <Button
-                  variant="default"
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
-                  onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-                >
-                  <FaGoogle className="h-5 w-5" />
-                  Continuer avec Google
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
-                  onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
-                >
-                  <FaDiscord className="h-5 w-5" />
-                  Continuer avec Discord
-                </Button>
-              </div>
+              <>
+                <p className="text-base text-center text-stone-600 dark:text-stone-400 mb-6 max-w-md mx-auto">
+                  Créez votre compte gratuitement et prenez le contrôle de vos finances dès aujourd&apos;hui !
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-lg mx-auto">
+                  <Button
+                    variant="default"
+                    className="h-12 px-8 text-base sm:h-14 sm:px-10 sm:text-lg
+                               flex items-center justify-center gap-2 w-full sm:w-auto 
+                               shadow-lg hover:shadow-amber-500/40 dark:hover:shadow-amber-200/30
+                               focus-visible:ring-amber-500 dark:focus-visible:ring-amber-300"
+                    onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+                  >
+                    <FaGoogle className="h-5 w-5 sm:h-6 sm:w-6" />
+                    S&apos;inscrire avec Google
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    className="h-12 px-6 text-base sm:h-14 sm:px-8 sm:text-lg
+                               flex items-center justify-center gap-2 w-full sm:w-auto
+                               border-stone-300 dark:border-stone-700"
+                    onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
+                  >
+                    <FaDiscord className="h-5 w-5 sm:h-6 sm:w-6" />
+                    S&apos;inscrire avec Discord
+                  </Button>
+                </div>
+              </>
             ) : (
               <Link 
                 href="/dashboard"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 mx-auto"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md 
+                           text-lg font-semibold
+                           ring-offset-background transition-colors 
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
+                           disabled:pointer-events-none disabled:opacity-50 
+                           bg-primary text-primary-foreground hover:bg-primary/90 
+                           h-14 px-10
+                           mx-auto shadow-lg"
               >
                 Accéder à mon compte
               </Link>
