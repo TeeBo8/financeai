@@ -95,7 +95,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <h3 className="font-bold text-stone-900 dark:text-amber-100">Suivi des dépenses</h3>
                     <p className="text-sm text-stone-700 dark:text-stone-300">
-                      Ajoutez et catégorisez vos transactions. L&apos;IA vous aide à classer et les récurrentes sont gérées pour vous.
+                      Laissez notre IA simplifier votre suivi : catégorisation intelligente des transactions et gestion automatisée de vos dépenses récurrentes.
                     </p>
                   </div>
                 </div>
@@ -107,7 +107,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <h3 className="font-bold text-stone-900 dark:text-amber-100">Objectifs d&apos;épargne</h3>
                     <p className="text-sm text-stone-700 dark:text-stone-300">
-                      Définissez et suivez vos objectifs financiers.
+                      Concrétisez vos rêves ! Définissez, suivez et atteignez vos objectifs d&apos;épargne plus facilement que jamais.
                     </p>
                   </div>
                 </div>
@@ -119,7 +119,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <h3 className="font-bold text-stone-900 dark:text-amber-100">Transactions récurrentes</h3>
                     <p className="text-sm text-stone-700 dark:text-stone-300">
-                      Gérez vos revenus et dépenses récurrents.
+                      Gardez le cap sur vos finances récurrentes. Suivi facile de vos revenus, dépenses fixes et de tous vos abonnements.
                     </p>
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <h3 className="font-bold text-stone-900 dark:text-amber-100">Rapports détaillés</h3>
                     <p className="text-sm text-stone-700 dark:text-stone-300">
-                      Visualisez vos finances avec des graphiques clairs.
+                      La puissance de l&apos;analyse à votre service. Des graphiques détaillés et des résumés IA pour décrypter vos habitudes financières.
                     </p>
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <h3 className="font-bold text-stone-900 dark:text-amber-100">Assistant IA</h3>
                     <p className="text-sm text-stone-700 dark:text-stone-300">
-                      Profitez de l&apos;aide de l&apos;IA pour la gestion (suggestions de catégorie et plus à venir).
+                      Découvrez la gestion financière augmentée. Notre IA vous aide aujourd&apos;hui (catégories, rapports) et prépare déjà les conseils de demain.
                     </p>
                   </div>
                 </div>
@@ -155,7 +155,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <h3 className="font-bold text-stone-900 dark:text-amber-100">Multi-comptes</h3>
                     <p className="text-sm text-stone-700 dark:text-stone-300">
-                      Gérez tous vos comptes au même endroit.
+                      Simplifiez votre vue d&apos;ensemble. Connectez et gérez tous vos comptes bancaires facilement, au même endroit.
                     </p>
                   </div>
                 </div>
