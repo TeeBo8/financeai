@@ -2,9 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { LogIn, Bot, ListChecks, Target, ArrowRightLeft, PieChart, Rocket, Landmark } from 'lucide-react';
+import { LogIn, Bot, ListChecks, Target, ArrowRightLeft, PieChart, Rocket, Landmark, Briefcase } from 'lucide-react';
 import { useSession, signIn } from "next-auth/react";
-import { FaGoogle, FaDiscord } from 'react-icons/fa';
+import { FaGoogle, FaDiscord, FaLinkedin, FaGithub } from 'react-icons/fa';
 import Particles from '../components/ui/particles';
 
 export default function Home() {
@@ -166,11 +166,50 @@ export default function Home() {
       </main>
 
       {/* Section Footer */}
-      <footer className="relative z-30 bg-background border-t border-stone-200 dark:border-stone-800 mt-auto py-3">
-        <div className="container mx-auto text-center">
+      <footer className="relative z-30 bg-background border-t border-stone-200 dark:border-stone-800 mt-auto py-6">
+        <div className="container mx-auto px-4 text-center flex flex-col items-center gap-4">
+          
+          {/* Ligne de copyright */}
           <p className="text-sm text-stone-600 dark:text-stone-400">
             © {new Date().getFullYear()} FinanceAI. Tous droits réservés.
           </p>
+
+          {/* Ligne "Projet perso" */}
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            Un projet personnel créé avec <span className="text-red-500">❤️</span> par Thibault Leture.
+          </p>
+
+          {/* Liens sociaux */}
+          <div className="flex items-center justify-center gap-4">
+            <a 
+              href="https://www.linkedin.com/in/thibault-leture-5740242a1/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              aria-label="LinkedIn de Thibault Leture"
+              className="text-stone-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-200 transition-colors"
+            >
+              <FaLinkedin className="h-6 w-6" />
+            </a>
+            <a 
+              href="https://github.com/TeeBo8" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              aria-label="GitHub de Thibault Leture"
+              className="text-stone-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-200 transition-colors"
+            >
+              <FaGithub className="h-6 w-6" />
+            </a>
+            <a 
+              href="https://portfoliothibaultleture.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              aria-label="Portfolio de Thibault Leture"
+              className="text-stone-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-200 transition-colors"
+            >
+              <Briefcase className="h-6 w-6" />
+            </a>
+          </div>
+
         </div>
       </footer>
     </div>
